@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>策略游戏机制数值模拟器 - 资源生产·拉条·长期Buff·军事编组</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: "#d4af37",
+              goldlight: "#f5d77f",
+              darkgold: "#997b24",
+              crimson: "#881337",
+              emerald: "#10b981",
+              cyan: "#06b6d4",
+              slatebg: "#090d16",
+              cardbg: "#111827",
+              cardborder: "#1f2937"
+            }
+          },
+          fontFamily: {
+            sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+            mono: ["JetBrains Mono", "Courier New", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #151e30 0%, #090d16 75%, #05070b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0b0f19; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #2a3449; border-radius: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+    .gold-glow { box-shadow: 0 0 20px -3px rgba(212, 175, 55, 0.3); }
+    .slider-track {
+      accent-color: #d4af37;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased custom-scroll selection:bg-brand-gold selection:text-black">
+
+  <!-- TOP APP HEADER & TIME ENGINE BAR -->
+  <header class="border-b border-brand-cardborder bg-brand-slatebg/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-gold via-amber-500 to-brand-crimson p-0.5 shadow-lg flex items-center justify-center">
+          <div class="w-full h-full bg-brand-slatebg rounded-[10px] flex items-center justify-center">
+            <i class="fa-solid fa-sliders text-brand-gold text-base"></i>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brand-goldlight via-amber-300 to-amber-100 flex items-center gap-2">
+            资源生产·拉条与军事机制模拟器
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">v1.0 可配置沙盘</span>
+          </h1>
+          <p class="text-xs text-slate-400 font-mono">基于《钢铁雄心2》滑条经济 + P社大战略进阶军备编组原型</p>
+        </div>
+      </div>
+
+      <!-- Time Engine Controls -->
+      <div class="flex items-center flex-wrap gap-2">
+        <div class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-xs flex items-center gap-3 shadow-inner">
+          <span class="text-slate-400"><i class="fa-regular fa-calendar-days text-amber-400 mr-1"></i>推演时间:</span>
+          <span id="display-date" class="text-amber-300 font-bold">第 1 年 1 月 1 日 (第 1 天)</span>
+        </div>
+
+        <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
+          <button onclick="stepSimulation(1)" class="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 hover:text-white transition-all active:scale-95 flex items-center gap-1" title="推进 1 天">
+            <i class="fa-solid fa-play text-[10px]"></i> +1天
+          </button>
+          <button onclick="stepSimulation(10)" class="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 hover:text-amber-200 transition-all active:scale-95 flex items-center gap-1" title="推进 10 天">
+            <i class="fa-solid fa-forward text-[10px]"></i> +10天
+          </button>
+          <button onclick="stepSimulation(30)" class="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-all active:scale-95 flex items-center gap-1" title="推进 1 个月 (30天)">
+            <i class="fa-solid fa-forward-fast text-[10px]"></i> +30天(1月)
+          </button>
+          <button id="btn-auto-play" onclick="toggleAutoPlay()" class="px-3.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-all active:scale-95 flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-play"></i> <span>自动推演</span>
+          </button>
+          <button onclick="resetSimulation()" class="px-2.5 py-1.5 rounded-md bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/50 text-xs transition-all active:scale-95" title="重置模拟器">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+
+        <!-- Mars Event Trigger -->
+        <button onclick="triggerMarsEvent()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all active:scale-95">
+          <i class="fa-solid fa-meteor text-amber-300"></i> 降临火星资源
+        </button>
+
+        <!-- Config Modal Button -->
+        <button onclick="openConfigModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-semibold flex items-center gap-1.5 transition-all">
+          <i class="fa-solid fa-gear text-amber-400"></i> 数值配置
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- 1. RESOURCE DASHBOARD (METRICS) -->
+    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      
+      <!-- Population & Manpower -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg relative overflow-hidden group hover:border-cyan-500/50 transition-all">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-users text-cyan-400"></i> 总人口 / 人力</span>
+          <span id="net-pop" class="font-mono text-[11px] text-emerald-400">+0/d</span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <div id="disp-total-pop" class="text-xl font-bold font-mono text-cyan-300">10,000</div>
+          <div class="text-[10px] text-slate-400 font-mono">闲置: <span id="disp-idle-pop" class="text-slate-200 font-semibold">2,500</span></div>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-400 flex justify-between border-t border-slate-800/80 pt-1">
+          <span>可用兵力池:</span>
+          <span id="disp-manpower-pool" class="text-amber-300 font-mono font-bold">1,000</span>
+        </div>
+      </div>
+
+      <!-- Food Granary -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-wheat-awn text-emerald-400"></i> 粮食储备</span>
+          <span id="net-food" class="font-mono text-[11px] text-emerald-400">+0/d</span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <div id="disp-food" class="text-xl font-bold font-mono text-emerald-300">5,000</div>
+          <div class="text-[10px] text-slate-400 font-mono">产 <span id="disp-food-prod" class="text-emerald-400">120</span> / 耗 <span id="disp-food-cons" class="text-rose-400">80</span></div>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-400 flex justify-between border-t border-slate-800/80 pt-1">
+          <span>粮食储备天数:</span>
+          <span id="disp-food-days" class="text-slate-200 font-mono font-bold">62 天</span>
+        </div>
+      </div>
+
+      <!-- Treasury / Money -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg relative overflow-hidden group hover:border-amber-500/50 transition-all">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-coins text-amber-400"></i> 国库金钱</span>
+          <span id="net-gold" class="font-mono text-[11px] text-amber-400">+0/d</span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <div id="disp-gold" class="text-xl font-bold font-mono text-amber-300">2,000</div>
+          <div class="text-[10px] text-slate-400 font-mono">收 <span id="disp-gold-income" class="text-amber-400">50</span> / 支 <span id="disp-gold-upkeep" class="text-rose-400">20</span></div>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-400 flex justify-between border-t border-slate-800/80 pt-1">
+          <span>常备军军饷支:</span>
+          <span id="disp-standing-upkeep" class="text-rose-300 font-mono">15/d</span>
+        </div>
+      </div>
+
+      <!-- War Horses -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg relative overflow-hidden group hover:border-orange-500/50 transition-all">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-horse-head text-orange-400"></i> 战马储备</span>
+          <span class="text-[10px] font-mono text-slate-400">单价:<span id="disp-horse-price" class="text-amber-300">50</span>G</span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <div id="disp-horses" class="text-xl font-bold font-mono text-orange-300">100</div>
+          <button onclick="buyMaterial('horses', 10)" class="px-2 py-0.5 rounded bg-orange-600/30 hover:bg-orange-600 text-[10px] font-semibold text-orange-200 border border-orange-500/30 transition-all">
+            +10匹
+          </button>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-400 flex justify-between border-t border-slate-800/80 pt-1">
+          <span>骑兵在编数:</span>
+          <span id="disp-cav-count" class="text-slate-200 font-mono font-bold">2 队 (100骑)</span>
+        </div>
+      </div>
+
+      <!-- Military Arms & Equipment -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg relative overflow-hidden group hover:border-purple-500/50 transition-all">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-purple-400"></i> 军械/重甲</span>
+          <span class="text-[10px] font-mono text-slate-400">单价:<span id="disp-arms-price" class="text-amber-300">30</span>G</span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <div id="disp-arms" class="text-xl font-bold font-mono text-purple-300">80</div>
+          <button onclick="buyMaterial('arms', 10)" class="px-2 py-0.5 rounded bg-purple-600/30 hover:bg-purple-600 text-[10px] font-semibold text-purple-200 border border-purple-500/30 transition-all">
+            +10具
+          </button>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-400 flex justify-between border-t border-slate-800/80 pt-1">
+          <span>重装/专属军备:</span>
+          <span id="disp-heavy-count" class="text-slate-200 font-mono font-bold">1 队 (50骑)</span>
+        </div>
+      </div>
+
+      <!-- Total Military Forces -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg relative overflow-hidden group hover:border-rose-500/50 transition-all">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-person-military-pointing text-rose-400"></i> 部队在役总数</span>
+          <span id="disp-standing-ratio" class="font-mono text-[10px] text-amber-400">常备 30%</span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <div id="disp-total-troops" class="text-xl font-bold font-mono text-rose-300">800</div>
+          <div class="text-[10px] text-slate-400 font-mono">战力: <span id="disp-combat-power" class="text-amber-300 font-bold">1,120</span></div>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-400 flex justify-between border-t border-slate-800/80 pt-1">
+          <span>填线 / 进阶 / 专属:</span>
+          <span class="text-slate-300 font-mono"><span id="disp-fill-count">600</span>/<span id="disp-adv-count">100</span>/<span id="disp-spec-count">100</span></span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 2. CITY CONTROLS & PRODUCTION SLIDERS SECTION -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Left: City Switcher & Sliders (7 Cols) -->
+      <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
+        
+        <!-- City Header & Mode Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono text-slate-400">当前管理:</span>
+            <div class="flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+              <button id="tab-city-0" onclick="switchCityTab(0)" class="px-3 py-1 rounded-md text-xs font-semibold transition-all bg-amber-500 text-black shadow">
+                🏯 主城·洛邑 (农耕)
+              </button>
+              <button id="tab-city-1" onclick="switchCityTab(1)" class="px-3 py-1 rounded-md text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all">
+                🐎 边塞·西凉 (产马)
+              </button>
+              <button id="tab-city-2" onclick="switchCityTab(2)" class="px-3 py-1 rounded-md text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all">
+                ⛵ 港口·广陵 (沿海)
+              </button>
+            </div>
+          </div>
+
+          <!-- Control Level: Single / Global / AI -->
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-slate-400 font-mono">层级:</span>
+            <select id="control-mode-select" onchange="changeControlMode()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-amber-300 font-mono text-xs focus:outline-none focus:border-amber-500">
+              <option value="city">单城微操设置</option>
+              <option value="global">全局统一同步</option>
+              <option value="auto">委托AI自动托管</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- City Info Banner -->
+        <div id="city-banner" class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-200" id="city-name-disp">主城·洛邑</span>
+            <span id="city-tags-disp" class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/40 text-[10px]">
+              🌾 农耕沃野 (+20% 粮产)
+            </span>
+          </div>
+          <div class="flex items-center gap-4 font-mono text-slate-400 text-[11px]">
+            <span>城人口: <b id="city-pop-disp" class="text-cyan-300">5,000</b></span>
+            <span>城金钱: <b id="city-gold-disp" class="text-amber-300">1,000</b></span>
+            <span>城粮食: <b id="city-food-disp" class="text-emerald-300">2,500</b></span>
+          </div>
+        </div>
+
+        <!-- Sliders Container (鋼2全局/单城滑条) -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-sm text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-amber-400"></i> 人力生产四向分配滑条 (钢铁雄心2机制)
+            </div>
+            <div class="text-xs font-mono">
+              总分配率: <span id="slider-sum-disp" class="font-bold text-emerald-400">100%</span>
+              <span id="slider-error-tag" class="hidden ml-2 text-rose-400 text-[10px]">⚠️ 分配超额/不足</span>
+            </div>
+          </div>
+
+          <!-- Slider 1: Food -->
+          <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-emerald-300 font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-wheat-awn text-emerald-400"></i> 1. 粮食生产投入 (Agriculture)
+              </span>
+              <div class="flex items-center gap-3 font-mono">
+                <span class="text-slate-400">人力投入: <b id="food-pop-alloc" class="text-slate-200">1,500</b> 人</span>
+                <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/50 font-bold" id="food-slider-val">30%</span>
+              </div>
+            </div>
+            <input type="range" id="slider-food" min="0" max="100" value="30" oninput="onSliderChange('food')" class="w-full h-2 bg-slate-900 rounded-lg slider-track accent-emerald-500 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+              <span>预计日产粮: <span id="est-food-prod" class="text-emerald-400">+60/d</span> (含地区/Buff修正)</span>
+              <span id="food-surplus-status" class="text-amber-300">盈余达标中 🟢</span>
+            </div>
+          </div>
+
+          <!-- Slider 2: Money -->
+          <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-amber-300 font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-coins text-amber-400"></i> 2. 金钱税收投入 (Tax & Commerce)
+              </span>
+              <div class="flex items-center gap-3 font-mono">
+                <span class="text-slate-400">人力投入: <b id="money-pop-alloc" class="text-slate-200">1,500</b> 人</span>
+                <span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/50 font-bold" id="money-slider-val">30%</span>
+              </div>
+            </div>
+            <input type="range" id="slider-money" min="0" max="100" value="30" oninput="onSliderChange('money')" class="w-full h-2 bg-slate-900 rounded-lg slider-track accent-amber-500 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+              <span>预计日增收入: <span id="est-money-prod" class="text-amber-400">+30/d</span></span>
+              <span id="money-surplus-status" class="text-amber-300">盈余达标中 🟢</span>
+            </div>
+          </div>
+
+          <!-- Slider 3: Military Manpower -->
+          <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-rose-300 font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-cat text-rose-400"></i> 3. 兵员动员划分 (Military Recruits)
+              </span>
+              <div class="flex items-center gap-3 font-mono">
+                <span class="text-slate-400">划分人口: <b id="mil-pop-alloc" class="text-slate-200">1,000</b> 人</span>
+                <span class="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800/50 font-bold" id="mil-slider-val">20%</span>
+              </div>
+            </div>
+            <input type="range" id="slider-mil" min="0" max="100" value="20" oninput="onSliderChange('mil')" class="w-full h-2 bg-slate-900 rounded-lg slider-track accent-rose-500 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+              <span>用于初级填线招募与兵力池储备</span>
+              <span>日转化兵力: <span id="est-mil-prod" class="text-rose-400">+10/d</span></span>
+            </div>
+          </div>
+
+          <!-- Slider 4: Idle Population -->
+          <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-cyan-300 font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-bed text-cyan-400"></i> 4. 闲置休养人口 (Idle & Population Growth)
+              </span>
+              <div class="flex items-center gap-3 font-mono">
+                <span class="text-slate-400">闲置人数: <b id="idle-pop-alloc" class="text-slate-200">1,000</b> 人</span>
+                <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50 font-bold" id="idle-slider-val">20%</span>
+              </div>
+            </div>
+            <input type="range" id="slider-idle" min="0" max="100" value="20" oninput="onSliderChange('idle')" class="w-full h-2 bg-slate-900 rounded-lg slider-track accent-cyan-500 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+              <span>闲置人口带来自然繁育正向增益</span>
+              <span>日自然增长: <span id="est-idle-growth" class="text-cyan-400">+2.5 人/d</span></span>
+            </div>
+          </div>
+
+          <!-- Quick presets -->
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[11px] text-slate-400 font-mono">快速分配预设:</span>
+            <div class="flex gap-2">
+              <button onclick="applyPreset(40, 20, 20, 20)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300">农业优先</button>
+              <button onclick="applyPreset(20, 40, 20, 20)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300">商业优先</button>
+              <button onclick="applyPreset(20, 20, 40, 20)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300">战时动员</button>
+              <button onclick="applyPreset(25, 25, 25, 25)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300">均衡发展</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Right: Long-Term Buff System & Status (5 Cols) -->
+      <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 flex flex-col justify-between">
+        
+        <div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="font-bold text-sm text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-hourglass-half text-amber-400"></i> 长期Buff蓄力与延迟消退引擎
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+              N+1延退 / N+2消退
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            连续超额生产满足 <span class="text-amber-300 font-mono font-bold" id="cfg-disp-req-days">90天(3月)</span> 可激活长期Buff。若在第N月取消，将在第 <span class="text-cyan-300 font-mono font-bold">N+1月</span> 缓冲延退，直至第 <span class="text-rose-300 font-mono font-bold">N+2月</span> 完全消退。
+          </p>
+
+          <!-- Buff Cards List -->
+          <div class="mt-4 space-y-3">
+            
+            <!-- Buff 1: Food Grain Buff -->
+            <div id="buff-card-food" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 transition-all">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-emerald-300 flex items-center gap-1.5">
+                  <i class="fa-solid fa-seedling text-emerald-400"></i> 🌾 仓廪丰实 (粮食长期Buff)
+                </span>
+                <span id="buff-badge-food" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400">
+                  蓄力中 0/90天
+                </span>
+              </div>
+              <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                <div id="buff-bar-food" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>效果: 粮食产量 <b class="text-emerald-400">+20%</b>, 人口繁育 <b class="text-cyan-300">+10%</b></span>
+                <span id="buff-state-food" class="text-slate-500">未激活</span>
+              </div>
+            </div>
+
+            <!-- Buff 2: Money Prosperity Buff -->
+            <div id="buff-card-money" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 transition-all">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-amber-300 flex items-center gap-1.5">
+                  <i class="fa-solid fa-sack-dollar text-amber-400"></i> 💰 商贾辐辏 (金钱长期Buff)
+                </span>
+                <span id="buff-badge-money" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400">
+                  蓄力中 0/90天
+                </span>
+              </div>
+              <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                <div id="buff-bar-money" class="bg-amber-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>效果: 金钱税收 <b class="text-amber-400">+25%</b>, 军械采购成本 <b class="text-emerald-400">-15%</b></span>
+                <span id="buff-state-money" class="text-slate-500">未激活</span>
+              </div>
+            </div>
+
+            <!-- Buff 3: Population Prosperity Buff -->
+            <div id="buff-card-pop" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 transition-all">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-cyan-300 flex items-center gap-1.5">
+                  <i class="fa-solid fa-hands-holding-child text-cyan-400"></i> 🛌 休养生息 (人丁兴旺Buff)
+                </span>
+                <span id="buff-badge-pop" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400">
+                  蓄力中 0/90天
+                </span>
+              </div>
+              <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                <div id="buff-bar-pop" class="bg-cyan-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>效果: 闲置自然增长率 <b class="text-cyan-400">+50%</b></span>
+                <span id="buff-state-pop" class="text-slate-500">未激活</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 font-mono flex items-center justify-between">
+          <span>💡 保持滑条高分配或每日高盈余即可持续维持</span>
+          <button onclick="openConfigModal()" class="text-amber-400 hover:text-amber-300 underline">调整天数配置</button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 3. MILITARY SYSTEM & UNIT RECRUITMENT -->
+    <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
+      
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
+            <i class="fa-solid fa-chess-rook"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+              军事编组与部队招募系统 (初级填线 · 进阶合成 · 专属兵种 · 常备军)
+            </h3>
+            <p class="text-xs text-slate-400">兵力人口直接生产填线部队；搭配物资（马匹/军械/战船）合成进阶与专属高级兵种</p>
+          </div>
+        </div>
+
+        <!-- Standing Army Toggle & Ratio -->
+        <div class="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800 text-xs">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-crown text-amber-400"></i>
+            <span class="text-slate-300 font-semibold">常备军编制比例:</span>
+            <span id="standing-army-pct-disp" class="text-amber-300 font-mono font-bold">30%</span>
+          </div>
+          <input type="range" id="standing-army-slider" min="0" max="100" step="5" value="30" oninput="onStandingArmySliderChange()" class="w-24 h-1.5 bg-slate-800 rounded slider-track accent-amber-500">
+          <span class="text-[10px] text-slate-400 font-mono">维护费 <span class="text-rose-400" id="cfg-disp-upkeep-mult">2.5x</span> / 战力 <span class="text-emerald-400" id="cfg-disp-combat-mult">+50%</span></span>
+        </div>
+      </div>
+
+      <!-- Unit Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- CARD 1: Fill-Line Infantry (填线部队) -->
+        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 space-y-3 flex flex-col justify-between hover:border-slate-700 transition-all">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-person-military-rifle text-slate-400"></i> 普通步兵 / 弓手 (填线)
+              </span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono">初级部队</span>
+            </div>
+            <p class="text-[11px] text-slate-400">
+              消耗基础兵员。低维护成本，主要负责阵线支撑与要塞填线。
+            </p>
+            <div class="text-[11px] font-mono text-slate-300 space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <div class="flex justify-between"><span>单队消耗:</span> <span class="text-amber-300">100 兵员</span></div>
+              <div class="flex justify-between"><span>基础战力:</span> <span class="text-slate-300">100 / 队</span></div>
+              <div class="flex justify-between"><span>日常维护:</span> <span class="text-rose-300">0.5 粮/d, 0.2 金/d</span></div>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-slate-800/80">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-400">在役规模:</span>
+              <b id="unit-count-infantry" class="text-slate-200">600 人 (6队)</b>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="recruitUnit('infantry', 1)" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-all">
+                招募 1 队
+              </button>
+              <button onclick="recruitUnit('infantry', 5)" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-all">
+                招募 5 队
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: Advanced Cavalry (进阶骑兵) -->
+        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 space-y-3 flex flex-col justify-between hover:border-orange-500/40 transition-all">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-xs text-orange-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-horse text-orange-400"></i> 突击轻骑兵 (进阶)
+              </span>
+              <span class="px-2 py-0.5 rounded bg-orange-950 text-orange-300 border border-orange-800/40 text-[10px] font-mono">人+马合成</span>
+            </div>
+            <p class="text-[11px] text-slate-400">
+              需人和战马合成编组。机动突破与侧翼包抄主力。
+            </p>
+            <div class="text-[11px] font-mono text-slate-300 space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <div class="flex justify-between"><span>单队消耗:</span> <span class="text-amber-300">50兵 + 50马</span></div>
+              <div class="flex justify-between"><span>基础战力:</span> <span class="text-orange-300">180 / 队</span></div>
+              <div class="flex justify-between"><span>日常维护:</span> <span class="text-rose-300">1.2 粮/d, 0.8 金/d</span></div>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-slate-800/80">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-400">在役规模:</span>
+              <b id="unit-count-cavalry" class="text-orange-300">100 人 (2队)</b>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="recruitUnit('cavalry', 1)" class="py-1 rounded bg-orange-600/30 hover:bg-orange-600 text-xs font-semibold text-orange-200 border border-orange-500/30 transition-all">
+                编组 1 队
+              </button>
+              <button onclick="recruitUnit('cavalry', 3)" class="py-1 rounded bg-orange-600/30 hover:bg-orange-600 text-xs font-semibold text-orange-200 border border-orange-500/30 transition-all">
+                编组 3 队
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 3: Heavy Cavalry / Arms (重甲骑兵/军械进阶) -->
+        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 space-y-3 flex flex-col justify-between hover:border-purple-500/40 transition-all">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-xs text-purple-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-chess-knight text-purple-400"></i> 具装重骑兵 (高级专属)
+              </span>
+              <span class="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/40 text-[10px] font-mono">人+马+甲</span>
+            </div>
+            <p class="text-[11px] text-slate-400">
+              特殊人物/势力解锁。全装甲重骑兵，毁灭性正面冲锋。
+            </p>
+            <div class="text-[11px] font-mono text-slate-300 space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <div class="flex justify-between"><span>单队消耗:</span> <span class="text-amber-300">50兵+50马+50甲</span></div>
+              <div class="flex justify-between"><span>基础战力:</span> <span class="text-purple-300">320 / 队</span></div>
+              <div class="flex justify-between"><span>日常维护:</span> <span class="text-rose-300">2.0 粮/d, 2.0 金/d</span></div>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-slate-800/80">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-400">在役规模:</span>
+              <b id="unit-count-heavy" class="text-purple-300">50 人 (1队)</b>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="recruitUnit('heavy', 1)" class="py-1 rounded bg-purple-600/30 hover:bg-purple-600 text-xs font-semibold text-purple-200 border border-purple-500/30 transition-all">
+                组建 1 队
+              </button>
+              <button onclick="recruitUnit('heavy', 2)" class="py-1 rounded bg-purple-600/30 hover:bg-purple-600 text-xs font-semibold text-purple-200 border border-purple-500/30 transition-all">
+                组建 2 队
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 4: Coastal Ships & Siege (战船与攻城器) -->
+        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 space-y-3 flex flex-col justify-between hover:border-cyan-500/40 transition-all">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-xs text-cyan-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-ship text-cyan-400"></i> 艨艟楼船水师 (沿海特权)
+              </span>
+              <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/40 text-[10px] font-mono">港口专属</span>
+            </div>
+            <p class="text-[11px] text-slate-400">
+              沿河沿海城市解锁购买建造。掌控水系要道与跨海投送。
+            </p>
+            <div class="text-[11px] font-mono text-slate-300 space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <div class="flex justify-between"><span>单艘消耗:</span> <span class="text-amber-300">50兵 + 150金</span></div>
+              <div class="flex justify-between"><span>基础战力:</span> <span class="text-cyan-300">220 / 艘</span></div>
+              <div class="flex justify-between"><span>日常维护:</span> <span class="text-rose-300">0.8 粮/d, 1.5 金/d</span></div>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-slate-800/80">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-400">水师规模:</span>
+              <b id="unit-count-ship" class="text-cyan-300">1 艘 (50水手)</b>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="recruitUnit('ship', 1)" class="py-1 rounded bg-cyan-600/30 hover:bg-cyan-600 text-xs font-semibold text-cyan-200 border border-cyan-500/30 transition-all">
+                建造 1 艘
+              </button>
+              <button onclick="disbandTroops()" class="py-1 rounded bg-slate-800 hover:bg-rose-900/50 text-xs font-semibold text-rose-300 border border-rose-800/30 transition-all" title="解散部分部队退还兵员">
+                裁军还农
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 4. HISTORICAL CHART & SIMULATION LOGS -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Chart Canvas (7 Cols) -->
+      <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-cyan-400"></i> 推演历史动态曲线 (粮食·金钱·人口·军力)
+          </h3>
+          <span class="text-xs font-mono text-slate-400">实时推演记录</span>
+        </div>
+        <div class="relative h-[280px]">
+          <canvas id="simChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Logs Terminal (5 Cols) -->
+      <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-terminal text-amber-400"></i> 局势与事件心跳日志
+          </h3>
+          <button onclick="clearLogs()" class="text-slate-500 hover:text-slate-300 text-xs">清空日志</button>
+        </div>
+
+        <div id="log-container" class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 font-mono text-[11px] h-[240px] overflow-y-auto space-y-1.5 custom-scroll">
+          <div class="text-slate-500">[第 1 天] 模拟器初始化完成。人口 10,000，粮草 5,000，国库 2,000。</div>
+        </div>
+
+        <div class="text-[10px] text-slate-500 font-mono flex items-center justify-between pt-1">
+          <span>🟢 正常结算 | ⚡ 火星事件 | 🌟 Buff变更 | ⚠️ 警报</span>
+          <span id="log-count-disp">1 条记录</span>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- CONFIGURATION MODAL (ALL VALUES CONFIGURABLE AS REQUESTED) -->
+  <div id="config-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-sliders text-brand-gold text-lg"></i>
+          <div>
+            <h3 class="text-base font-bold text-slate-100">⚙️ 游戏数值、公式与Buff规则配置中心</h3>
+            <p class="text-xs text-slate-400">所有底层参数均可在此实时调整，立即作用于推演模型</p>
+          </div>
+        </div>
+        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Config Forms) -->
+      <div class="p-6 overflow-y-auto space-y-6 custom-scroll text-xs">
+        
+        <!-- Group 1: 长期Buff机制配置 (User specifically emphasized this) -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-amber-500/30 space-y-3">
+          <div class="font-bold text-sm text-amber-300 flex items-center gap-2">
+            <i class="fa-solid fa-hourglass text-amber-400"></i> 1. 长期Buff与延迟消退规则参数 (核心配置)
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+            <div>
+              <label class="block text-slate-400 mb-1">激活所需达标天数 (天):</label>
+              <input type="number" id="cfg-buff-req-days" value="90" min="10" max="365" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-amber-300 font-bold">
+              <span class="text-[10px] text-slate-500">默认 90 天 (即3个月)</span>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">取消后缓冲延退天数 (天):</label>
+              <input type="number" id="cfg-buff-linger-days" value="30" min="5" max="180" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-cyan-300 font-bold">
+              <span class="text-[10px] text-slate-500">第 N+1 月持续保留</span>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">完全消退天数 (天):</label>
+              <input type="number" id="cfg-buff-decay-days" value="30" min="5" max="180" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-rose-300 font-bold">
+              <span class="text-[10px] text-slate-500">第 N+2 月完全消失</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono pt-2 border-t border-slate-900">
+            <div>
+              <label class="block text-slate-400 mb-1">粮食Buff产量加成 (%):</label>
+              <input type="number" id="cfg-buff-food-mult" value="20" min="0" max="200" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-emerald-300">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">金钱Buff税收加成 (%):</label>
+              <input type="number" id="cfg-buff-money-mult" value="25" min="0" max="200" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-amber-300">
+            </div>
+          </div>
+        </div>
+
+        <!-- Group 2: 基础经济与产出公式 -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="font-bold text-sm text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-wheat-awn text-emerald-400"></i> 2. 基础产出与人口繁育公式
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+            <div>
+              <label class="block text-slate-400 mb-1">人均基础粮产系数 (粮/人/日):</label>
+              <input type="number" step="0.01" id="cfg-food-per-pop" value="0.04" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">人均基础税金系数 (金/人/日):</label>
+              <input type="number" step="0.01" id="cfg-gold-per-pop" value="0.02" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">闲置人口自然繁育率 (%/月):</label>
+              <input type="number" step="0.1" id="cfg-idle-growth-rate" value="3.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-cyan-300">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono pt-2 border-t border-slate-900">
+            <div>
+              <label class="block text-slate-400 mb-1">市民基础每日口粮消耗 (粮/人/日):</label>
+              <input type="number" step="0.001" id="cfg-pop-food-consumption" value="0.008" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-rose-300">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">兵力人口日转化系数:</label>
+              <input type="number" step="0.005" id="cfg-mil-conv-rate" value="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-rose-300">
+            </div>
+          </div>
+        </div>
+
+        <!-- Group 3: 物资价格与特产 -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="font-bold text-sm text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-coins text-amber-400"></i> 3. 物资采购基准价格
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 font-mono">
+            <div>
+              <label class="block text-slate-400 mb-1">战马基准单价 (金):</label>
+              <input type="number" id="cfg-price-horse" value="50" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-amber-300">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">军械重甲单价 (金):</label>
+              <input type="number" id="cfg-price-arms" value="30" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-purple-300">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">水师战船造价 (金):</label>
+              <input type="number" id="cfg-price-ship" value="150" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-cyan-300">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">产地特产折扣率 (%):</label>
+              <input type="number" id="cfg-discount-origin" value="30" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-emerald-300">
+            </div>
+          </div>
+        </div>
+
+        <!-- Group 4: 军事与常备军参数 -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="font-bold text-sm text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-shield text-rose-400"></i> 4. 军事招募与常备军维持参数
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+            <div>
+              <label class="block text-slate-400 mb-1">常备军额外维护费倍率:</label>
+              <input type="number" step="0.1" id="cfg-upkeep-mult" value="2.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-rose-300">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">常备军战斗力加成 (%):</label>
+              <input type="number" id="cfg-standing-combat-bonus" value="50" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-emerald-300">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">火星资源触发几率 (%/月):</label>
+              <input type="number" id="cfg-mars-chance" value="15" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-purple-300">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-slate-800 flex items-center justify-between bg-slate-950">
+        <button onclick="resetConfigToDefault()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-all">
+          恢复默认参数
+        </button>
+        <button onclick="saveAndApplyConfig()" class="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition-all shadow-lg">
+          保存并应用配置
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SIMULATION ENGINE SCRIPT -->
+  <script>
+    // ==========================================
+    // 1. GLOBAL CONFIGURATION & STATE
+    // ==========================================
+    let simConfig = {
+      // Buff rules
+      buffReqDays: 90,       // 3 months (90 days)
+      buffLingerDays: 30,    // N+1 month buffer
+      buffDecayDays: 30,     // N+2 month decay
+      buffFoodMult: 0.20,    // +20%
+      buffMoneyMult: 0.25,   // +25%
+      
+      // Base economy ratios
+      foodPerPop: 0.04,
+      goldPerPop: 0.02,
+      idleGrowthRatePerMonth: 0.03, // 3% per 30 days
+      popFoodConsumption: 0.008,
+      milConvRate: 0.01,
+      
+      // Prices
+      priceHorse: 50,
+      priceArms: 30,
+      priceShip: 150,
+      discountOrigin: 0.30,
+      
+      // Military
+      upkeepMult: 2.5,
+      standingCombatBonus: 0.50,
+      marsChancePerMonth: 15
+    };
+
+    let simState = {
+      day: 1,
+      autoPlaying: false,
+      autoTimer: null,
+      currentCityIndex: 0,
+      controlMode: "city", // "city", "global", "auto"
+      standingArmyRatio: 0.30, // 30%
+      
+      // Buff progress trackers
+      buffs: {
+        food: { sustainedDays: 0, active: false, lingerDaysRemaining: 0 },
+        money: { sustainedDays: 0, active: false, lingerDaysRemaining: 0 },
+        pop: { sustainedDays: 0, active: false, lingerDaysRemaining: 0 }
+      },
+
+      // Faction Pool Resources
+      faction: {
+        manpowerPool: 1000,
+        horses: 100,
+        arms: 80,
+        ships: 1,
+        troops: {
+          infantry: 6,  // 600 soldiers
+          cavalry: 2,   // 100 cavalry
+          heavy: 1,     // 50 heavy
+          navy: 1       // 50 sailors
+        }
+      },
+
+      // 3 Cities
+      cities: [
+        {
+          name: "主城·洛邑",
+          typeTag: "🌾 农耕沃野 (+20% 粮产)",
+          foodBonus: 0.20,
+          horseDiscount: 0,
+          isCoastal: false,
+          population: 5000,
+          food: 2500,
+          gold: 1000,
+          sliders: { food: 30, money: 30, mil: 20, idle: 20 }
+        },
+        {
+          name: "边塞·西凉",
+          typeTag: "🐎 产马重镇 (战马采购 -30% 费用)",
+          foodBonus: -0.10,
+          horseDiscount: 0.30,
+          isCoastal: false,
+          population: 3000,
+          food: 1500,
+          gold: 600,
+          sliders: { food: 25, money: 25, mil: 35, idle: 15 }
+        },
+        {
+          name: "港口·广陵",
+          typeTag: "⛵ 沿海水师 (可造战船 / 商业 +15%)",
+          foodBonus: 0.05,
+          horseDiscount: 0,
+          isCoastal: true,
+          population: 2000,
+          food: 1000,
+          gold: 400,
+          sliders: { food: 35, money: 35, mil: 15, idle: 15 }
+        }
+      ],
+
+      // History logs for charting
+      history: {
+        days: [1],
+        population: [10000],
+        food: [5000],
+        gold: [2000],
+        troops: [800],
+        combatPower: [1120]
+      }
+    };
+
+    // ==========================================
+    // 2. CHART INITIALIZATION
+    // ==========================================
+    let simChart;
+    function initChart() {
+      const ctx = document.getElementById("simChart").getContext("2d");
+      simChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: simState.history.days.map(d => `D${d}`),
+          datasets: [
+            {
+              label: "粮食储备",
+              data: simState.history.food,
+              borderColor: "#10b981",
+              backgroundColor: "rgba(16, 185, 129, 0.1)",
+              yAxisID: "y1",
+              tension: 0.3,
+              fill: false
+            },
+            {
+              label: "国库金钱",
+              data: simState.history.gold,
+              borderColor: "#f59e0b",
+              backgroundColor: "rgba(245, 158, 11, 0.1)",
+              yAxisID: "y1",
+              tension: 0.3,
+              fill: false
+            },
+            {
+              label: "总人口",
+              data: simState.history.population,
+              borderColor: "#06b6d4",
+              yAxisID: "y",
+              tension: 0.3,
+              fill: false
+            },
+            {
+              label: "战力指数",
+              data: simState.history.combatPower,
+              borderColor: "#f43f5e",
+              yAxisID: "y",
+              borderDash: [5, 5],
+              tension: 0.3,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { labels: { color: "#94a3b8", font: { size: 10 } } }
+          },
+          scales: {
+            x: {
+              grid: { color: "rgba(51, 65, 85, 0.3)" },
+              ticks: { color: "#64748b", font: { size: 10 } }
+            },
+            y: {
+              type: "linear",
+              position: "left",
+              grid: { color: "rgba(51, 65, 85, 0.3)" },
+              ticks: { color: "#06b6d4", font: { size: 10 } }
+            },
+            y1: {
+              type: "linear",
+              position: "right",
+              grid: { drawOnChartArea: false },
+              ticks: { color: "#f59e0b", font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // 3. STEP CALCULATION ENGINE (DAILY TICK)
+    // ==========================================
+    function stepSimulation(daysToStep = 1) {
+      for (let s = 0; s < daysToStep; s++) {
+        tickOneDay();
+      }
+      updateUI();
+      updateChart();
+    }
+
+    function tickOneDay() {
+      simState.day += 1;
+
+      // Handle AI auto-balance if enabled
+      if (simState.controlMode === "auto") {
+        runAutoBalanceAI();
+      }
+
+      let totalFoodProduced = 0;
+      let totalGoldProduced = 0;
+      let totalManpowerProduced = 0;
+      let totalPopGrowth = 0;
+
+      // 1. Process Cities
+      simState.cities.forEach(city => {
+        const s = city.sliders;
+        const pop = city.population;
+
+        // Buff multipliers
+        let foodBuff = (simState.buffs.food.active ? simConfig.buffFoodMult : 0);
+        let goldBuff = (simState.buffs.money.active ? simConfig.buffMoneyMult : 0);
+        let popBuff = (simState.buffs.pop.active ? 0.5 : 0);
+
+        // Daily Production
+        let cityFoodProd = (pop * (s.food / 100)) * simConfig.foodPerPop * (1 + city.foodBonus + foodBuff);
+        let cityGoldProd = (pop * (s.money / 100)) * simConfig.goldPerPop * (1 + goldBuff);
+        let cityMilProd = (pop * (s.mil / 100)) * simConfig.milConvRate;
+        
+        // Idle Population Natural Growth
+        let idlePop = pop * (s.idle / 100);
+        let cityPopGrowth = (idlePop * (simConfig.idleGrowthRatePerMonth / 30)) * (1 + popBuff);
+
+        // City level consumption
+        let cityFoodCons = pop * simConfig.popFoodConsumption;
+
+        // Apply
+        city.food = Math.max(0, city.food + cityFoodProd - cityFoodCons);
+        city.gold = Math.max(0, city.gold + cityGoldProd);
+        city.population = Math.round(city.population + cityPopGrowth);
+
+        totalFoodProduced += cityFoodProd;
+        totalGoldProduced += cityGoldProd;
+        totalManpowerProduced += cityMilProd;
+        totalPopGrowth += cityPopGrowth;
+      });
+
+      // 2. Faction Mil Pool Increment
+      simState.faction.manpowerPool += Math.round(totalManpowerProduced);
+
+      // 3. Military Upkeep Calculation
+      let troops = simState.faction.troops;
+      let totalSoldiers = (troops.infantry * 100) + (troops.cavalry * 50) + (troops.heavy * 50) + (troops.navy * 50);
+
+      let baseFoodUpkeep = (troops.infantry * 0.5) + (troops.cavalry * 1.2) + (troops.heavy * 2.0) + (troops.navy * 0.8);
+      let baseGoldUpkeep = (troops.infantry * 0.2) + (troops.cavalry * 0.8) + (troops.heavy * 2.0) + (troops.navy * 1.5);
+
+      // Standing army multiplier applied to the standing proportion
+      let standingMult = (1 - simState.standingArmyRatio) + (simState.standingArmyRatio * simConfig.upkeepMult);
+      let dailyTroopFoodUpkeep = baseFoodUpkeep * standingMult;
+      let dailyTroopGoldUpkeep = baseGoldUpkeep * standingMult;
+
+      // Deduct Upkeep from capital city or evenly
+      deductFactionUpkeep(dailyTroopFoodUpkeep, dailyTroopGoldUpkeep);
+
+      // 4. Update Buff Progress & Lingering
+      updateBuffState("food", totalFoodProduced > 80);
+      updateBuffState("money", totalGoldProduced > 40);
+      updateBuffState("pop", totalPopGrowth > 2);
+
+      // 5. Random Mars Resource Event (Monthly chance)
+      if (simState.day % 30 === 0) {
+        if (Math.random() * 100 < simConfig.marsChancePerMonth) {
+          triggerMarsEvent(true);
+        }
+      }
+
+      // 6. Record history every 5 days or at the end
+      if (simState.day % 5 === 0 || daysToStep === 1) {
+        recordHistory();
+      }
+    }
+
+    function deductFactionUpkeep(foodReq, goldReq) {
+      // Try to deduct from cities
+      let remainingFood = foodReq;
+      let remainingGold = goldReq;
+
+      for (let c of simState.cities) {
+        if (c.food >= remainingFood) {
+          c.food -= remainingFood;
+          remainingFood = 0;
+        } else {
+          remainingFood -= c.food;
+          c.food = 0;
+        }
+
+        if (c.gold >= remainingGold) {
+          c.gold -= remainingGold;
+          remainingGold = 0;
+        } else {
+          remainingGold -= c.gold;
+          c.gold = 0;
+        }
+      }
+
+      // If food runs out completely -> Famine alert
+      if (remainingFood > 0 && simState.day % 10 === 0) {
+        addLog(`⚠️ [饥荒预警] 粮草耗尽！无法足额供给部队口粮，可能发生哗变减员！`, "rose");
+      }
+    }
+
+    function updateBuffState(buffKey, isConditionMet) {
+      let b = simState.buffs[buffKey];
+      const reqDays = simConfig.buffReqDays;
+      const lingerDays = simConfig.buffLingerDays;
+      const decayDays = simConfig.buffDecayDays;
+
+      if (isConditionMet) {
+        // Condition met
+        if (!b.active) {
+          b.sustainedDays += 1;
+          if (b.sustainedDays >= reqDays) {
+            b.active = true;
+            b.lingerDaysRemaining = lingerDays + decayDays;
+            addLog(`🌟 [长期Buff激活] 连续达标 ${reqDays} 天，获得【${getBuffTitle(buffKey)}】增益！`, "emerald");
+          }
+        } else {
+          // Already active, reset linger pool
+          b.sustainedDays = reqDays;
+          b.lingerDaysRemaining = lingerDays + decayDays;
+        }
+      } else {
+        // Condition NOT met
+        if (b.active) {
+          b.lingerDaysRemaining -= 1;
+          if (b.lingerDaysRemaining === decayDays) {
+            addLog(`⏳ [Buff缓冲延退] 【${getBuffTitle(buffKey)}】已进入第 N+1 月延退期...`, "amber");
+          } else if (b.lingerDaysRemaining <= 0) {
+            b.active = false;
+            b.sustainedDays = 0;
+            addLog(`❌ [Buff完全消退] 【${getBuffTitle(buffKey)}】于第 N+2 月完全消退。`, "rose");
+          }
+        } else {
+          b.sustainedDays = Math.max(0, b.sustainedDays - 1);
+        }
+      }
+    }
+
+    function getBuffTitle(key) {
+      if (key === "food") return "仓廪丰实";
+      if (key === "money") return "商贾辐辏";
+      if (key === "pop") return "休养生息";
+      return key;
+    }
+
+    function recordHistory() {
+      let totalPop = simState.cities.reduce((sum, c) => sum + c.population, 0);
+      let totalFood = simState.cities.reduce((sum, c) => sum + c.food, 0);
+      let totalGold = simState.cities.reduce((sum, c) => sum + c.gold, 0);
+      let troops = simState.faction.troops;
+      let totalSoldiers = (troops.infantry * 100) + (troops.cavalry * 50) + (troops.heavy * 50) + (troops.navy * 50);
+      let combatPower = calcCombatPower();
+
+      simState.history.days.push(simState.day);
+      simState.history.population.push(totalPop);
+      simState.history.food.push(Math.round(totalFood));
+      simState.history.gold.push(Math.round(totalGold));
+      simState.history.troops.push(totalSoldiers);
+      simState.history.combatPower.push(Math.round(combatPower));
+
+      // Keep max 50 points
+      if (simState.history.days.length > 50) {
+        simState.history.days.shift();
+        simState.history.population.shift();
+        simState.history.food.shift();
+        simState.history.gold.shift();
+        simState.history.troops.shift();
+        simState.history.combatPower.shift();
+      }
+    }
+
+    function calcCombatPower() {
+      let t = simState.faction.troops;
+      let base = (t.infantry * 100) + (t.cavalry * 180) + (t.heavy * 320) + (t.navy * 220);
+      // Standing army boost
+      let bonus = 1 + (simState.standingArmyRatio * simConfig.standingCombatBonus);
+      return base * bonus;
+    }
+
+    // ==========================================
+    // 4. UI UPDATE & BINDINGS
+    // ==========================================
+    function updateUI() {
+      // Date Display
+      const year = Math.floor((simState.day - 1) / 360) + 1;
+      const month = Math.floor(((simState.day - 1) % 360) / 30) + 1;
+      const day = ((simState.day - 1) % 30) + 1;
+      document.getElementById("display-date").innerText = `第 ${year} 年 ${month} 月 ${day} 日 (第 ${simState.day} 天)`;
+
+      // Totals
+      const totalPop = simState.cities.reduce((sum, c) => sum + c.population, 0);
+      const totalFood = simState.cities.reduce((sum, c) => sum + c.food, 0);
+      const totalGold = simState.cities.reduce((sum, c) => sum + c.gold, 0);
+      
+      const currentCity = simState.cities[simState.currentCityIndex];
+      const idlePop = Math.round(totalPop * (currentCity.sliders.idle / 100));
+
+      document.getElementById("disp-total-pop").innerText = totalPop.toLocaleString();
+      document.getElementById("disp-idle-pop").innerText = idlePop.toLocaleString();
+      document.getElementById("disp-manpower-pool").innerText = simState.faction.manpowerPool.toLocaleString();
+
+      document.getElementById("disp-food").innerText = Math.round(totalFood).toLocaleString();
+      document.getElementById("disp-gold").innerText = Math.round(totalGold).toLocaleString();
+      document.getElementById("disp-horses").innerText = simState.faction.horses;
+      document.getElementById("disp-arms").innerText = simState.faction.arms;
+
+      // Net calculations
+      let foodBuff = (simState.buffs.food.active ? simConfig.buffFoodMult : 0);
+      let estFoodProd = simState.cities.reduce((sum, c) => sum + (c.population * (c.sliders.food / 100) * simConfig.foodPerPop * (1 + c.foodBonus + foodBuff)), 0);
+      let estFoodCons = totalPop * simConfig.popFoodConsumption;
+      let netFood = estFoodProd - estFoodCons;
+      
+      document.getElementById("disp-food-prod").innerText = Math.round(estFoodProd);
+      document.getElementById("disp-food-cons").innerText = Math.round(estFoodCons);
+      document.getElementById("net-food").innerText = (netFood >= 0 ? `+${Math.round(netFood)}/d` : `${Math.round(netFood)}/d`);
+      document.getElementById("net-food").className = (netFood >= 0 ? "font-mono text-[11px] text-emerald-400" : "font-mono text-[11px] text-rose-400");
+      document.getElementById("disp-food-days").innerText = (estFoodCons > 0 ? `${Math.round(totalFood / estFoodCons)} 天` : "充足");
+
+      let goldBuff = (simState.buffs.money.active ? simConfig.buffMoneyMult : 0);
+      let estGoldIncome = simState.cities.reduce((sum, c) => sum + (c.population * (c.sliders.money / 100) * simConfig.goldPerPop * (1 + goldBuff)), 0);
+      let troops = simState.faction.troops;
+      let baseGoldUpkeep = (troops.infantry * 0.2) + (troops.cavalry * 0.8) + (troops.heavy * 2.0) + (troops.navy * 1.5);
+      let standingMult = (1 - simState.standingArmyRatio) + (simState.standingArmyRatio * simConfig.upkeepMult);
+      let totalGoldUpkeep = baseGoldUpkeep * standingMult;
+      let netGold = estGoldIncome - totalGoldUpkeep;
+
+      document.getElementById("disp-gold-income").innerText = Math.round(estGoldIncome);
+      document.getElementById("disp-gold-upkeep").innerText = Math.round(totalGoldUpkeep);
+      document.getElementById("disp-standing-upkeep").innerText = `${Math.round(totalGoldUpkeep)}/d`;
+      document.getElementById("net-gold").innerText = (netGold >= 0 ? `+${Math.round(netGold)}/d` : `${Math.round(netGold)}/d`);
+      document.getElementById("net-gold").className = (netGold >= 0 ? "font-mono text-[11px] text-amber-400" : "font-mono text-[11px] text-rose-400");
+
+      // Troops
+      let totalSoldiers = (troops.infantry * 100) + (troops.cavalry * 50) + (troops.heavy * 50) + (troops.navy * 50);
+      document.getElementById("disp-total-troops").innerText = totalSoldiers.toLocaleString();
+      document.getElementById("disp-combat-power").innerText = Math.round(calcCombatPower()).toLocaleString();
+      document.getElementById("disp-fill-count").innerText = troops.infantry * 100;
+      document.getElementById("disp-adv-count").innerText = troops.cavalry * 50;
+      document.getElementById("disp-spec-count").innerText = (troops.heavy * 50) + (troops.navy * 50);
+      document.getElementById("disp-cav-count").innerText = `${troops.cavalry} 队 (${troops.cavalry * 50}骑)`;
+      document.getElementById("disp-heavy-count").innerText = `${troops.heavy} 队 (${troops.heavy * 50}骑)`;
+      document.getElementById("disp-standing-ratio").innerText = `常备 ${(simState.standingArmyRatio * 100).toFixed(0)}%`;
+
+      // Unit counts
+      document.getElementById("unit-count-infantry").innerText = `${troops.infantry * 100} 人 (${troops.infantry}队)`;
+      document.getElementById("unit-count-cavalry").innerText = `${troops.cavalry * 50} 人 (${troops.cavalry}队)`;
+      document.getElementById("unit-count-heavy").innerText = `${troops.heavy * 50} 人 (${troops.heavy}队)`;
+      document.getElementById("unit-count-ship").innerText = `${troops.navy} 艘 (${troops.navy * 50}水手)`;
+
+      // Current City banner
+      document.getElementById("city-name-disp").innerText = currentCity.name;
+      document.getElementById("city-tags-disp").innerText = currentCity.typeTag;
+      document.getElementById("city-pop-disp").innerText = currentCity.population.toLocaleString();
+      document.getElementById("city-gold-disp").innerText = Math.round(currentCity.gold).toLocaleString();
+      document.getElementById("city-food-disp").innerText = Math.round(currentCity.food).toLocaleString();
+
+      // Sliders UI
+      updateSlidersUI();
+
+      // Buffs UI
+      updateBuffsUI();
+
+      // Config displays
+      document.getElementById("cfg-disp-req-days").innerText = `${simConfig.buffReqDays}天(${Math.round(simConfig.buffReqDays/30)}月)`;
+      document.getElementById("cfg-disp-upkeep-mult").innerText = `${simConfig.upkeepMult}x`;
+      document.getElementById("cfg-disp-combat-mult").innerText = `+${Math.round(simConfig.standingCombatBonus * 100)}%`;
+      document.getElementById("standing-army-pct-disp").innerText = `${Math.round(simState.standingArmyRatio * 100)}%`;
+    }
+
+    function updateSlidersUI() {
+      const city = simState.cities[simState.currentCityIndex];
+      const s = city.sliders;
+
+      document.getElementById("slider-food").value = s.food;
+      document.getElementById("slider-money").value = s.money;
+      document.getElementById("slider-mil").value = s.mil;
+      document.getElementById("slider-idle").value = s.idle;
+
+      document.getElementById("food-slider-val").innerText = `${s.food}%`;
+      document.getElementById("money-slider-val").innerText = `${s.money}%`;
+      document.getElementById("mil-slider-val").innerText = `${s.mil}%`;
+      document.getElementById("idle-slider-val").innerText = `${s.idle}%`;
+
+      document.getElementById("food-pop-alloc").innerText = Math.round(city.population * (s.food / 100)).toLocaleString();
+      document.getElementById("money-pop-alloc").innerText = Math.round(city.population * (s.money / 100)).toLocaleString();
+      document.getElementById("mil-pop-alloc").innerText = Math.round(city.population * (s.mil / 100)).toLocaleString();
+      document.getElementById("idle-pop-alloc").innerText = Math.round(city.population * (s.idle / 100)).toLocaleString();
+
+      let foodBuff = (simState.buffs.food.active ? simConfig.buffFoodMult : 0);
+      let estFood = city.population * (s.food / 100) * simConfig.foodPerPop * (1 + city.foodBonus + foodBuff);
+      let estMoney = city.population * (s.money / 100) * simConfig.goldPerPop;
+      let estMil = city.population * (s.mil / 100) * simConfig.milConvRate;
+      let estIdle = city.population * (s.idle / 100) * (simConfig.idleGrowthRatePerMonth / 30);
+
+      document.getElementById("est-food-prod").innerText = `+${estFood.toFixed(1)}/d`;
+      document.getElementById("est-money-prod").innerText = `+${estMoney.toFixed(1)}/d`;
+      document.getElementById("est-mil-prod").innerText = `+${estMil.toFixed(1)}/d`;
+      document.getElementById("est-idle-growth").innerText = `+${estIdle.toFixed(1)} 人/d`;
+
+      let sum = s.food + s.money + s.mil + s.idle;
+      document.getElementById("slider-sum-disp").innerText = `${sum}%`;
+      document.getElementById("slider-sum-disp").className = (sum === 100 ? "font-bold text-emerald-400" : "font-bold text-rose-400");
+      document.getElementById("slider-error-tag").className = (sum === 100 ? "hidden" : "inline ml-2 text-rose-400 text-[10px]");
+    }
+
+    function updateBuffsUI() {
+      const keys = ["food", "money", "pop"];
+      keys.forEach(k => {
+        const b = simState.buffs[k];
+        const req = simConfig.buffReqDays;
+        const totalLinger = simConfig.buffLingerDays + simConfig.buffDecayDays;
+        
+        let pct = 0;
+        let badge = document.getElementById(`buff-badge-${k}`);
+        let bar = document.getElementById(`buff-bar-${k}`);
+        let state = document.getElementById(`buff-state-${k}`);
+        let card = document.getElementById(`buff-card-${k}`);
+
+        if (b.active) {
+          pct = 100;
+          bar.style.width = `100%`;
+          bar.className = (k === "food" ? "bg-emerald-500" : (k === "money" ? "bg-amber-500" : "bg-cyan-500")) + " h-2 rounded-full";
+          card.className = "bg-slate-950 border border-amber-500/50 rounded-xl p-3 space-y-2 shadow-md transition-all";
+
+          if (b.lingerDaysRemaining < totalLinger) {
+            badge.innerText = `缓冲延退中 (${b.lingerDaysRemaining}天)`;
+            badge.className = "px-2 py-0.5 rounded text-[10px] font-mono bg-amber-950 text-amber-300 border border-amber-800/40";
+            state.innerText = `将在 ${b.lingerDaysRemaining} 天后完全消退`;
+            state.className = "text-amber-400 font-bold";
+          } else {
+            badge.innerText = `已激活 (长期生效)`;
+            badge.className = "px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800/40";
+            state.innerText = `持续生效中`;
+            state.className = "text-emerald-400 font-bold";
+          }
+        } else {
+          pct = Math.min(100, (b.sustainedDays / req) * 100);
+          bar.style.width = `${pct}%`;
+          bar.className = "bg-slate-600 h-2 rounded-full";
+          card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 transition-all";
+          badge.innerText = `蓄力中 ${b.sustainedDays}/${req}天`;
+          badge.className = "px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400";
+          state.innerText = `未激活 (${Math.round(pct)}%)`;
+          state.className = "text-slate-500";
+        }
+      });
+    }
+
+    function updateChart() {
+      if (!simChart) return;
+      simChart.data.labels = simState.history.days.map(d => `D${d}`);
+      simChart.data.datasets[0].data = simState.history.food;
+      simChart.data.datasets[1].data = simState.history.gold;
+      simChart.data.datasets[2].data = simState.history.population;
+      simChart.data.datasets[3].data = simState.history.combatPower;
+      simChart.update("none");
+    }
+
+    // ==========================================
+    // 5. SLIDER ADJUSTMENT & BALANCING
+    // ==========================================
+    function onSliderChange(changedKey) {
+      const city = simState.cities[simState.currentCityIndex];
+      let newVal = parseInt(document.getElementById(`slider-${changedKey}`).value) || 0;
+      city.sliders[changedKey] = newVal;
+
+      // If global mode, sync all cities
+      if (simState.controlMode === "global") {
+        simState.cities.forEach(c => {
+          c.sliders[changedKey] = newVal;
+        });
+      }
+
+      updateUI();
+    }
+
+    function applyPreset(f, m, mil, idl) {
+      const targetCities = (simState.controlMode === "global" ? simState.cities : [simState.cities[simState.currentCityIndex]]);
+      targetCities.forEach(c => {
+        c.sliders.food = f;
+        c.sliders.money = m;
+        c.sliders.mil = mil;
+        c.sliders.idle = idl;
+      });
+      addLog(`⚙️ 切换滑条预设 [粮:${f}% 金:${m}% 兵:${mil}% 闲:${idl}%]`, "cyan");
+      updateUI();
+    }
+
+    function switchCityTab(idx) {
+      simState.currentCityIndex = idx;
+      for (let i = 0; i < 3; i++) {
+        const tab = document.getElementById(`tab-city-${i}`);
+        if (i === idx) {
+          tab.className = "px-3 py-1 rounded-md text-xs font-semibold transition-all bg-amber-500 text-black shadow";
+        } else {
+          tab.className = "px-3 py-1 rounded-md text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all";
+        }
+      }
+      updateUI();
+    }
+
+    function changeControlMode() {
+      simState.controlMode = document.getElementById("control-mode-select").value;
+      if (simState.controlMode === "global") {
+        addLog(`🌐 已开启【全局宏观控制】：当前城市的滑条将同步应用至所有领地。`, "amber");
+      } else if (simState.controlMode === "auto") {
+        addLog(`🤖 已开启【AI自动托管】：AI 将根据储备自动动态平衡滑条。`, "purple");
+      } else {
+        addLog(`🏯 已切回【单城微操设置】。`, "slate");
+      }
+    }
+
+    function runAutoBalanceAI() {
+      // AI checks food supply days; if < 30 days -> boosts food slider
+      simState.cities.forEach(c => {
+        if (c.food < 1000) {
+          c.sliders = { food: 50, money: 20, mil: 15, idle: 15 };
+        } else if (c.gold < 500) {
+          c.sliders = { food: 25, money: 45, mil: 15, idle: 15 };
+        } else {
+          c.sliders = { food: 30, money: 30, mil: 20, idle: 20 };
+        }
+      });
+    }
+
+    function onStandingArmySliderChange() {
+      simState.standingArmyRatio = parseInt(document.getElementById("standing-army-slider").value) / 100;
+      updateUI();
+    }
+
+    // ==========================================
+    // 6. MATERIAL & MILITARY RECRUITMENT
+    // ==========================================
+    function buyMaterial(type, qty) {
+      let price = (type === "horses" ? simConfig.priceHorse : simConfig.priceArms);
+      const currentCity = simState.cities[simState.currentCityIndex];
+      
+      // Apply discount if city has horse discount
+      if (type === "horses" && currentCity.horseDiscount > 0) {
+        price = price * (1 - currentCity.horseDiscount);
+      }
+
+      let totalCost = price * qty;
+      let totalGold = simState.cities.reduce((sum, c) => sum + c.gold, 0);
+
+      if (totalGold < totalCost) {
+        addLog(`❌ 国库金钱不足！购买 ${qty} ${type==="horses"?"匹战马":"具军械"} 需 ${totalCost}G，当前仅有 ${Math.round(totalGold)}G。`, "rose");
+        return;
+      }
+
+      // Deduct gold
+      let rem = totalCost;
+      for (let c of simState.cities) {
+        if (c.gold >= rem) { c.gold -= rem; rem = 0; break; }
+        else { rem -= c.gold; c.gold = 0; }
+      }
+
+      if (type === "horses") simState.faction.horses += qty;
+      if (type === "arms") simState.faction.arms += qty;
+
+      addLog(`🛒 采购成功：花费 ${totalCost}G 购入 ${qty} ${type==="horses"?"匹战马":"具军械"}。`, "emerald");
+      updateUI();
+    }
+
+    function recruitUnit(type, count) {
+      let p = simState.faction;
+      let mp = p.manpowerPool;
+
+      if (type === "infantry") {
+        let reqMp = count * 100;
+        if (mp < reqMp) {
+          addLog(`❌ 兵力池不足！招募 ${count} 队填线步兵需 ${reqMp} 兵员 (当前: ${mp})。`, "rose");
+          return;
+        }
+        p.manpowerPool -= reqMp;
+        p.troops.infantry += count;
+        addLog(`⚔️ 招募完成：${count} 队普通步兵/填线部队已入役！`, "slate");
+      }
+      else if (type === "cavalry") {
+        let reqMp = count * 50;
+        let reqHorses = count * 50;
+        if (mp < reqMp || p.horses < reqHorses) {
+          addLog(`❌ 资源不足！编组 ${count} 队轻骑兵需 ${reqMp} 兵员 + ${reqHorses} 匹战马 (兵员:${mp}, 战马:${p.horses})。`, "rose");
+          return;
+        }
+        p.manpowerPool -= reqMp;
+        p.horses -= reqHorses;
+        p.troops.cavalry += count;
+        addLog(`🐎 编组成功：人和战马合成 ${count} 队突击轻骑兵！`, "amber");
+      }
+      else if (type === "heavy") {
+        let reqMp = count * 50;
+        let reqHorses = count * 50;
+        let reqArms = count * 50;
+        if (mp < reqMp || p.horses < reqHorses || p.arms < reqArms) {
+          addLog(`❌ 军备不足！组建 ${count} 队重骑兵需 ${reqMp} 兵 + ${reqHorses} 马 + ${reqArms} 具重甲！`, "rose");
+          return;
+        }
+        p.manpowerPool -= reqMp;
+        p.horses -= reqHorses;
+        p.arms -= reqArms;
+        p.troops.heavy += count;
+        addLog(`👑 精锐组建：特殊名将专属 ${count} 队具装重骑兵成军！`, "purple");
+      }
+      else if (type === "ship") {
+        const city = simState.cities[simState.currentCityIndex];
+        if (!city.isCoastal) {
+          addLog(`❌ 地理限制：只有沿海/沿河城市港口（如广陵）方可建造战船水师！`, "rose");
+          return;
+        }
+        let reqMp = count * 50;
+        let reqGold = count * simConfig.priceShip;
+        let totalGold = simState.cities.reduce((sum, c) => sum + c.gold, 0);
+
+        if (mp < reqMp || totalGold < reqGold) {
+          addLog(`❌ 资源不足！建造 ${count} 艘战船需 ${reqMp} 兵员 + ${reqGold}G！`, "rose");
+          return;
+        }
+        p.manpowerPool -= reqMp;
+        let rem = reqGold;
+        for (let c of simState.cities) {
+          if (c.gold >= rem) { c.gold -= rem; rem = 0; break; }
+          else { rem -= c.gold; c.gold = 0; }
+        }
+        p.troops.navy += count;
+        addLog(`⛵ 造船竣工：沿海港口成功下水 ${count} 艘艨艟战船！`, "cyan");
+      }
+
+      updateUI();
+    }
+
+    function disbandTroops() {
+      let t = simState.faction.troops;
+      if (t.infantry > 0) {
+        t.infantry -= 1;
+        simState.faction.manpowerPool += 80; // 80% returned
+        addLog(`🌾 裁军还农：解散 1 队步兵，回收 80 兵员至兵力池。`, "slate");
+      } else if (t.cavalry > 0) {
+        t.cavalry -= 1;
+        simState.faction.manpowerPool += 40;
+        simState.faction.horses += 40;
+        addLog(`🌾 解散 1 队轻骑兵，回收 40 兵员与 40 匹战马。`, "slate");
+      }
+      updateUI();
+    }
+
+    // ==========================================
+    // 7. MARS RESOURCE TRIGGER & EVENTS
+    // ==========================================
+    function triggerMarsEvent(isAuto = false) {
+      const events = [
+        { name: "西域贡马使团", type: "horses", amount: 40, desc: "西域番邦献上精良良驹 40 匹！" },
+        { name: "豪商倾囊助饷", type: "gold", amount: 800, desc: "地方富商捐献巨额军饷 800G！" },
+        { name: "天降甘霖大丰收", type: "food", amount: 1500, desc: "各州郡雨水充足，意外获得存粮 1,500 斛！" },
+        { name: "流民归附投军", type: "manpower", amount: 300, desc: "三辅流民来归，兵力池暴增 300 人！" },
+        { name: "发掘上古武库", type: "arms", amount: 50, desc: "探掘前朝古要塞，缴获完好铁甲军械 50 具！" }
+      ];
+
+      const ev = events[Math.floor(Math.random() * events.length)];
+
+      if (ev.type === "horses") simState.faction.horses += ev.amount;
+      if (ev.type === "arms") simState.faction.arms += ev.amount;
+      if (ev.type === "manpower") simState.faction.manpowerPool += ev.amount;
+      if (ev.type === "gold") simState.cities[0].gold += ev.amount;
+      if (ev.type === "food") simState.cities[0].food += ev.amount;
+
+      addLog(`⚡ [火星资源${isAuto?"·随机奇遇":"·手动降临"}] 【${ev.name}】：${ev.desc}`, "purple");
+      updateUI();
+    }
+
+    // ==========================================
+    // 8. LOGS SYSTEM
+    // ==========================================
+    let logCount = 1;
+    function addLog(text, color = "slate") {
+      const container = document.getElementById("log-container");
+      const item = document.createElement("div");
+      
+      let colorClass = "text-slate-300";
+      if (color === "emerald") colorClass = "text-emerald-400 font-semibold";
+      if (color === "amber") colorClass = "text-amber-400 font-semibold";
+      if (color === "cyan") colorClass = "text-cyan-400";
+      if (color === "rose") colorClass = "text-rose-400 font-bold";
+      if (color === "purple") colorClass = "text-purple-300 font-semibold";
+
+      item.className = `${colorClass} leading-relaxed`;
+      item.innerHTML = `<span class="text-slate-500 font-mono">[第${simState.day}天]</span> ${text}`;
+      
+      container.insertBefore(item, container.firstChild);
+      logCount++;
+      document.getElementById("log-count-disp").innerText = `${logCount} 条记录`;
+    }
+
+    function clearLogs() {
+      document.getElementById("log-container").innerHTML = "";
+      logCount = 0;
+      document.getElementById("log-count-disp").innerText = `0 条记录`;
+    }
+
+    // ==========================================
+    // 9. AUTO PLAY ENGINE
+    // ==========================================
+    function toggleAutoPlay() {
+      const btn = document.getElementById("btn-auto-play");
+      if (simState.autoPlaying) {
+        clearInterval(simState.autoTimer);
+        simState.autoPlaying = false;
+        btn.className = "px-3.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-all active:scale-95 flex items-center gap-1 shadow-sm";
+        btn.innerHTML = `<i class="fa-solid fa-play"></i> <span>自动推演</span>`;
+      } else {
+        simState.autoPlaying = true;
+        btn.className = "px-3.5 py-1.5 rounded-md bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white transition-all active:scale-95 flex items-center gap-1 shadow-sm animate-pulse";
+        btn.innerHTML = `<i class="fa-solid fa-pause"></i> <span>暂停推演</span>`;
+        simState.autoTimer = setInterval(() => {
+          stepSimulation(1);
+        }, 400); // 400ms per day
+      }
+    }
+
+    function resetSimulation() {
+      if (simState.autoPlaying) toggleAutoPlay();
+      simState.day = 1;
+      simState.standingArmyRatio = 0.30;
+      simState.buffs = {
+        food: { sustainedDays: 0, active: false, lingerDaysRemaining: 0 },
+        money: { sustainedDays: 0, active: false, lingerDaysRemaining: 0 },
+        pop: { sustainedDays: 0, active: false, lingerDaysRemaining: 0 }
+      };
+      simState.faction = {
+        manpowerPool: 1000,
+        horses: 100,
+        arms: 80,
+        ships: 1,
+        troops: { infantry: 6, cavalry: 2, heavy: 1, navy: 1 }
+      };
+      simState.cities[0].population = 5000; simState.cities[0].food = 2500; simState.cities[0].gold = 1000;
+      simState.cities[1].population = 3000; simState.cities[1].food = 1500; simState.cities[1].gold = 600;
+      simState.cities[2].population = 2000; simState.cities[2].food = 1000; simState.cities[2].gold = 400;
+
+      simState.history = {
+        days: [1],
+        population: [10000],
+        food: [5000],
+        gold: [2000],
+        troops: [800],
+        combatPower: [1120]
+      };
+
+      clearLogs();
+      addLog(`🔄 模拟器已重置回初始第 1 天状态。`, "cyan");
+      updateUI();
+      updateChart();
+    }
+
+    // ==========================================
+    // 10. CONFIG MODAL CONTROLS
+    // ==========================================
+    function openConfigModal() {
+      document.getElementById("cfg-buff-req-days").value = simConfig.buffReqDays;
+      document.getElementById("cfg-buff-linger-days").value = simConfig.buffLingerDays;
+      document.getElementById("cfg-buff-decay-days").value = simConfig.buffDecayDays;
+      document.getElementById("cfg-buff-food-mult").value = simConfig.buffFoodMult * 100;
+      document.getElementById("cfg-buff-money-mult").value = simConfig.buffMoneyMult * 100;
+
+      document.getElementById("cfg-food-per-pop").value = simConfig.foodPerPop;
+      document.getElementById("cfg-gold-per-pop").value = simConfig.goldPerPop;
+      document.getElementById("cfg-idle-growth-rate").value = simConfig.idleGrowthRatePerMonth * 100;
+      document.getElementById("cfg-pop-food-consumption").value = simConfig.popFoodConsumption;
+      document.getElementById("cfg-mil-conv-rate").value = simConfig.milConvRate;
+
+      document.getElementById("cfg-price-horse").value = simConfig.priceHorse;
+      document.getElementById("cfg-price-arms").value = simConfig.priceArms;
+      document.getElementById("cfg-price-ship").value = simConfig.priceShip;
+      document.getElementById("cfg-discount-origin").value = simConfig.discountOrigin * 100;
+
+      document.getElementById("cfg-upkeep-mult").value = simConfig.upkeepMult;
+      document.getElementById("cfg-standing-combat-bonus").value = simConfig.standingCombatBonus * 100;
+      document.getElementById("cfg-mars-chance").value = simConfig.marsChancePerMonth;
+
+      document.getElementById("config-modal").classList.remove("hidden");
+      document.getElementById("config-modal").classList.add("flex");
+    }
+
+    function closeConfigModal() {
+      document.getElementById("config-modal").classList.add("hidden");
+      document.getElementById("config-modal").classList.remove("flex");
+    }
+
+    function saveAndApplyConfig() {
+      simConfig.buffReqDays = parseInt(document.getElementById("cfg-buff-req-days").value) || 90;
+      simConfig.buffLingerDays = parseInt(document.getElementById("cfg-buff-linger-days").value) || 30;
+      simConfig.buffDecayDays = parseInt(document.getElementById("cfg-buff-decay-days").value) || 30;
+      simConfig.buffFoodMult = (parseFloat(document.getElementById("cfg-buff-food-mult").value) || 20) / 100;
+      simConfig.buffMoneyMult = (parseFloat(document.getElementById("cfg-buff-money-mult").value) || 25) / 100;
+
+      simConfig.foodPerPop = parseFloat(document.getElementById("cfg-food-per-pop").value) || 0.04;
+      simConfig.goldPerPop = parseFloat(document.getElementById("cfg-gold-per-pop").value) || 0.02;
+      simConfig.idleGrowthRatePerMonth = (parseFloat(document.getElementById("cfg-idle-growth-rate").value) || 3.0) / 100;
+      simConfig.popFoodConsumption = parseFloat(document.getElementById("cfg-pop-food-consumption").value) || 0.008;
+      simConfig.milConvRate = parseFloat(document.getElementById("cfg-mil-conv-rate").value) || 0.01;
+
+      simConfig.priceHorse = parseInt(document.getElementById("cfg-price-horse").value) || 50;
+      simConfig.priceArms = parseInt(document.getElementById("cfg-price-arms").value) || 30;
+      simConfig.priceShip = parseInt(document.getElementById("cfg-price-ship").value) || 150;
+      simConfig.discountOrigin = (parseFloat(document.getElementById("cfg-discount-origin").value) || 30) / 100;
+
+      simConfig.upkeepMult = parseFloat(document.getElementById("cfg-upkeep-mult").value) || 2.5;
+      simConfig.standingCombatBonus = (parseFloat(document.getElementById("cfg-standing-combat-bonus").value) || 50) / 100;
+      simConfig.marsChancePerMonth = parseInt(document.getElementById("cfg-mars-chance").value) || 15;
+
+      closeConfigModal();
+      addLog(`⚙️ [参数重载] 数值与Buff规则已更新：Buff达标需 ${simConfig.buffReqDays} 天，N+1缓冲 ${simConfig.buffLingerDays} 天，N+2消退 ${simConfig.buffDecayDays} 天。`, "emerald");
+      updateUI();
+    }
+
+    function resetConfigToDefault() {
+      simConfig = {
+        buffReqDays: 90,
+        buffLingerDays: 30,
+        buffDecayDays: 30,
+        buffFoodMult: 0.20,
+        buffMoneyMult: 0.25,
+        foodPerPop: 0.04,
+        goldPerPop: 0.02,
+        idleGrowthRatePerMonth: 0.03,
+        popFoodConsumption: 0.008,
+        milConvRate: 0.01,
+        priceHorse: 50,
+        priceArms: 30,
+        priceShip: 150,
+        discountOrigin: 0.30,
+        upkeepMult: 2.5,
+        standingCombatBonus: 0.50,
+        marsChancePerMonth: 15
+      };
+      openConfigModal();
+      addLog(`⚙️ 配置参数已重置为默认值。`, "slate");
+    }
+
+    // Initialize on page load
+    window.addEventListener("DOMContentLoaded", () => {
+      initChart();
+      updateUI();
+    });
+  </script>
+</body>
+</html>
