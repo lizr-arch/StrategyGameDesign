@@ -1,0 +1,162 @@
+[
+  {
+    "category": "ai_decision_engine",
+    "mechanism_name": "AI Diplomatic Action Evaluation Matrix (AI 外交行动接受度加权判定矩阵)",
+    "source_url": "https://eu4.paradoxwikis.com/Diplomacy",
+    "historical_archetype": {
+      "event_or_concept": "威斯特伐利亚和约后的均势结盟体系（Westphalian Balance of Power & Realpolitik）",
+      "historical_period": "1648年 – 1789年（威斯特伐利亚体系至法国大革命前夕）",
+      "historical_context": "近世欧洲外交从宗教狂热阵营转向现实主义地缘均势。君主国基于对扩张性大国（如哈布斯堡王朝、法兰西王国）的威胁感知（Threat Perception）、历史条约信誉（Trust/Reputation）以及军事体量对等性，动态调整同盟与外交立场。"
+    },
+    "game_design_rationale": {
+      "design_goal": "使 AI 国家表现出符合现实地缘政治逻辑的理性行为，防止玩家利用外交漏洞轻易拉拢强国做打手或达成不平衡条约。",
+      "abstraction_method": "将外交提案（结盟、皇家联姻、宣召参战）量化为正向驱动分（Positive Reasons）与负向阻碍分（Negative Reasons）的双向算分池，总分 $> 0$ 时接受，$\\le 0$ 时拒绝。"
+    },
+    "logic_type": "Rule-based Score",
+    "math_formula_or_weights": "$$\\text{AcceptanceScore} = \\sum R_{\\text{positive}} - \\sum R_{\\text{negative}}$$\n关键参数算分表：\n• $\\text{Diplomatic Reputation}: +5 \\text{ 分} / \\text{每点外交声誉}$\n• $\\text{Trust Level}: +1 \\text{ 分} / \\text{每点高于50的信任度 (50-100)}, -1 \\text{ 分} / \\text{每点低于50的信任度}$\n• $\\text{Attitude Modifiers}: \\text{Friendly} (+10), \\text{Threatened} (+20), \\text{Rival} (-1000), \\text{Outraged} (-1000), \\text{Neutral} (-20)$\n• $\\text{Relative Army Strength}: +20 \\times \\frac{\\text{ArmyStrength}_{\\text{target}}}{\\text{ArmyStrength}_{\\text{self}}}$\n• $\\text{Distance between Borders}: -1 \\text{ 分} / \\text{每固定地缘距离单位 (超过阈值直接 -1000 视为太远)}$\n• $\\text{Too Many Relations}: -50 \\text{ (若已超出外交关系槽位上限)}$\n• $\\text{Religious Differences}: -10 \\text{ (同宗教组异端)}, -20 \\text{ (跨宗教组异教)}$\n• $\\text{Aggressive Expansion (AE)}: -1 \\text{ 分} / \\text{每点 AE 累积}$",
+    "key_parameters": [
+      {
+        "name": "DIP_REPUTATION_WEIGHT",
+        "description": "Defines.lua 中的硬编码常数，控制外交声誉在结盟/联姻/借款谈判中的权重"
+      },
+      {
+        "name": "THREAT_ATTITUDE_THRESHOLD",
+        "description": "当某国被共同宿敌威胁时，触发对第三方的“受威胁”态度并提供大量正向好感加成"
+      },
+      {
+        "name": "PROVINCE_VITAL_INTEREST",
+        "description": "AI 设为战略核心利益（红地）的省份；若玩家与其重叠，每次重叠产生 -10 至 -100 的断盟负向倾向"
+      }
+    ],
+    "reverse_engineered_notes": "AI 在每月初（Monthly Tick）遍历所有已建立的外交关系，一旦由于玩家扩张导致 AE 攀升、相对军力下滑或战略利益省份冲突使得结盟算分跌破安全容忍阈值，AI 将立即启动“背叛倒计时”，下调态度为 Hostile/Rival 并主动解除盟约。",
+    "causal_effect": "外交算分矩阵构成了地缘联盟的动态稳态。当某一霸权国家过度扩张（AE 激增、破坏均势）时，周边中小型 AI 迅速切换为“受威胁”态度并彼此结盟，自发形成多边安全屏障。"
+  },
+  {
+    "category": "ai_decision_engine",
+    "mechanism_name": "AI War Declaration & Target Selection Desirability Matrix (AI 宣战意愿与地缘侵略阈值矩阵)",
+    "source_url": "https://eu4.paradoxwikis.com/Artificial_intelligence",
+    "historical_archetype": {
+      "event_or_concept": "腓特烈大帝夺取西里西亚与路易十四遗产继承战争（Opportunistic Expansion & Cabinet Wars）",
+      "historical_period": "17世纪中叶 – 18世纪中叶（巴洛克至启蒙时代的君王内阁战争）",
+      "historical_context": "近世君主发起战争高度依赖机会主义计算：评估宣战借口合法性（Casus Belli）、敌我联盟军事力量对比、敌国深陷内乱或财政危机的时机，并在权衡国际社会反弹风险（包围网）后精准出击。"
+    },
+    "game_design_rationale": {
+      "design_goal": "驱动 AI 国家主动发动符合其历史性格与地缘利益的领土扩张战争，同时抑制无脑自杀式宣战与战力不足时的冒进。",
+      "abstraction_method": "构建战争渴望度（War Desirability）数值评估模型。只有当总渴望度超过硬编码的宣战启动阈值（通常为 $+100$）且盟友参战倾向足够时，AI 才会正式发出宣战牒文。"
+    },
+    "logic_type": "Rule-based Score",
+    "math_formula_or_weights": "$$\\text{WarDesirability} = \\text{BaseCBWeight} + \\text{ClaimValue} + \\text{StrengthRatioScore} - \\text{DebtPenalty} - \\text{WarExhaustionPenalty} - \\text{AERiskPenalty} - \\text{AllyUnwillingness}$$\n权重评分拆解：\n• $\\text{Personality Multiplier}: \\text{Militarist (军国主义者} \\times 1.5), \\text{Diplomat (外交家} \\times 0.5), \\text{Administrator (行政家} \\times 0.8)$\n• $\\text{Military Ratio}: +100 \\times \\left( \\frac{\\text{Army}_{\\text{AttackerAlliance}}}{\\text{Army}_{\\text{DefenderAlliance}}} - 1.0 \\right) \\quad (\\text{若比例} < 0.85 \\text{ 则直接赋予极高负分})$\n• $\\text{Target Vulnerability}: +50 \\text{ (目标正处于另一场战争中)}, +30 \\text{ (目标处于低士气/少人力状态)}, +40 \\text{ (目标国内爆发大规模叛乱)}$\n• $\\text{Financial Status}: -10 \\text{ 分} / \\text{每笔未偿还贷款}, -100 \\text{ (若当前处于赤字且债务接近上限)}$\n• $\\text{War Exhaustion}: -20 \\text{ 分} / \\text{每点自身厌战度}$\n• $\\text{Coalition Fear}: -1000 \\text{ (若宣战获得地块将直接触发反本国包围网)}$",
+    "key_parameters": [
+      {
+        "name": "NAI.WAR_DESIRABILITY_THRESHOLD",
+        "description": "Defines.lua 中触发宣战的基准阈值常量（通常设定为 100）"
+      },
+      {
+        "name": "CONQUEST_PROVINCE_WEIGHT",
+        "description": "核心省份（Core）宣战权重显著高于普通伪造宣称（Claim）与无借口开战"
+      },
+      {
+        "name": "RULER_TRAIT_BOLD_FIGHTER",
+        "description": "君主特质修正，如“大胆好斗”降低对敌方盟友军力评估比例 20%，使 AI 更具进攻冒险性"
+      }
+    ],
+    "reverse_engineered_notes": "AI 每天都会对外交视野内的潜在受害者进行快速剪枝过滤（Pruning），筛选出持有有效宣战借口（CB）的目标；随后调用完整的联盟参战评估模拟函数，若总分为正且达成军力绝对优势，AI 将于当日立刻将驻军由低维护费拉至满负荷并下达宣战指令。",
+    "causal_effect": "该机制决定了弱小国家若失去强权盟友保护或遭遇严重叛乱，会瞬间沦为周围所有狼性 AI（如奥斯曼、莫斯科、法兰西）的共同猎物，触发多国瓜分风暴。"
+  },
+  {
+    "category": "ai_decision_engine",
+    "mechanism_name": "AI Peace Deal Evaluation & War Enthusiasm Mechanics (AI 和平谈判底线与战争热情判定)",
+    "source_url": "https://eu4.paradoxwikis.com/Peace_negotiations",
+    "historical_archetype": {
+      "event_or_concept": "七年战争和谈与乌得勒支和约（War Weariness & Treaty Negotiation Caps）",
+      "historical_period": "18世纪初 – 18世纪末",
+      "historical_context": "近代战争极少以彻底消灭敌国肉体为目的。随着战争时长增加、国库空虚、本土沦陷及封锁导致的厌战情绪蔓延，交战国往往在达成有限政治目的或承受力达到极限时签署妥协条约。"
+    },
+    "game_design_rationale": {
+      "design_goal": "模拟战争双方心理耐受力的动态衰减，防止战争演变为永无止境的僵局，确保和约割地价值严格受制于实际战场控制力（Warscore）。",
+      "abstraction_method": "将 AI 的求和倾向抽象为战争热情（War Enthusiasm: High/Medium/Low）及最终和约算分（Peace Acceptance Score），当和约总价值低于 AI 接受阈值时方可达成协议。"
+    },
+    "logic_type": "Rule-based Score",
+    "math_formula_or_weights": "$$\\text{PeaceAcceptance} = \\text{WarScore} + \\text{WarExhaustionMod} + \\text{LengthOfWarMod} + \\text{MilitaryStrengthMod} + \\text{OccupiedProvincesMod} - \\text{DemandsValue}$$\n算分细则：\n• $\\text{War Score Contribution}: +1.0 \\times \\text{实际战争分数 ([-100, +100])}$\n• $\\text{Length of War}: +50 \\text{ (战争刚开始)} \\rightarrow \\text{以每月} -0.75 \\text{ 线性衰减至} -50$\n• $\\text{Capital Occupied}: +20 \\text{ (若首都沦陷)}$\n• $\\text{Enthusiasm Modifiers}: \\text{High} (-20), \\text{Medium} (0), \\text{Low} (+20)$\n• $\\text{Blockaded Ports}: +1 \\text{ 分} / \\text{每 } 10\\% \\text{ 封锁度}$\n• $\\text{Rebel Threats}: +5 \\text{ 至 } +30 \\text{ (若国内反贼横行无法平定)}$\n• $\\text{Unconditional Surrender (无条件投降)}: \\text{当战争分数达到 } -100 \\text{ 或所有领土被占且无军队时，算分固定为 } +1000$",
+    "key_parameters": [
+      {
+        "name": "PEACE_TIME_EARLY_FACTOR",
+        "description": "战争初期的强硬度保护加成，防止开战数月内因一次小战役失利即直接投降"
+      },
+      {
+        "name": "INDIVIDUAL_PEACE_PENALTY",
+        "description": "作为联盟次要参战国（Non-leader）时的单独和谈意愿更容易受本土受损影响而迅速动摇"
+      },
+      {
+        "name": "MAX_WAR_EXHAUSTION",
+        "description": "厌战度上限20点，每点厌战度提供额外求和正向倾斜，同时在内政端极度拉高叛乱度与造核成本"
+      }
+    ],
+    "reverse_engineered_notes": "在和谈解析中，AI 极度排斥割让尚未被占领的省份（Demand without occupation: -1000 拒绝惩罚）；若战胜方全境占领（100% 战争分数）持续超过5年，AI 判定机制会无视一切热情修正强制触发绝对接受逻辑。",
+    "causal_effect": "此机制促使玩家必须快速攻克敌国首都与要塞以打掉其战争热情，或通过封锁与持久战拖垮敌国经济，实现以较小战场代价逼迫敌方大国盟友单独媾和（White Peace / Separate Peace）。"
+  },
+  {
+    "category": "ai_decision_engine",
+    "mechanism_name": "AI Deficit Spending, Mercenary Spam & Bankruptcy Trigger Tree (AI 财政赤字、雇佣兵滥用与破产判定树)",
+    "source_url": "https://eu4.paradoxwikis.com/Economy",
+    "historical_archetype": {
+      "event_or_concept": "西班牙帝国哈布斯堡王朝多次国家破产与热那亚银行家债务危机",
+      "historical_period": "1557年、1575年、1596年（腓力二世统治时期的财政危机）",
+      "historical_context": "美洲白银流入并未阻止西班牙因旷日持久的欧陆战争与高昂雇佣军费用陷入债务泥潭。由于缺乏近代中央银行信用体系，国库收入完全无法覆盖利息支出，导致国家频繁单方面宣告债务违约与破产。"
+    },
+    "game_design_rationale": {
+      "design_goal": "约束 AI 在生死存亡关头的非理性暴兵行为，模拟过度举债引发的财政恶性循环与最终崩溃惩罚。",
+      "abstraction_method": "设计基于国家总发展度与月度收入的贷款额度上限模型，结合赤字规模触发雇佣兵招募，当利息支出吞噬总收入时强制执行国家破产（Bankruptcy）状态。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{StandardLoanSize} = \\frac{\\text{TotalIncome}_{\\text{last 12 months}}}{12} \\times 5 \\quad (\\text{最低保底 } 5 \\text{ 杜卡特})$$\n$$\\text{MaxLoanCapacity} = \\frac{\\text{TotalAutonomyAdjustedDevelopment} \\times 0.5}{\\text{StandardLoanSize}}$$\n$$\\text{MonthlyInterest} = \\sum_{i=1}^{N_{\\text{loans}}} \\frac{\\text{LoanSize}_i \\times \\text{InterestRate}_i}{12}$$\n$$\\text{Bankruptcy Trigger Condition}: \\text{MonthlyInterest} \\ge \\text{TotalMonthlyGrossIncome} \\quad \\lor \\quad N_{\\text{loans}} \\ge \\text{MaxLoanCapacity}$$\n破产惩罚（持续5年）：\n• 陆军/海军士气 $-50\\%$，部队建筑维护费保持但战斗力彻底瘫痪\n• 所有顾问被立即解雇，科技/理念花费 $+50\\%$\n• 顾问池清空，所有正在建造的建筑、造船与造核进度直接取消且不退款\n• 自动清除全部债务，但向所有债权国赋予针对本国的惩罚性宣战借口",
+    "key_parameters": [
+      {
+        "name": "BASE_INTEREST_RATE",
+        "description": "基础年借贷利率 4.0%（经理念/特权优化最低可降至 1.0%）"
+      },
+      {
+        "name": "AI_MERCENARY_DESPERATION",
+        "description": "当国家处于保卫本土战争且正规人力归零时，AI 触发无视赤字的雇佣兵军团连环招募模式"
+      },
+      {
+        "name": "CORRUPTION_COST",
+        "description": "AI 频繁通过贬值货币（Debase Currency）获取短期现金，导致腐败度上升，推高所有点数消耗"
+      }
+    ],
+    "reverse_engineered_notes": "Clausewitz 引擎在每月经济结算时计算 `TotalExpense > TotalIncome`。若国库现金归零，引擎自动强制生成一笔标准贷款；AI 逻辑中存在一个著名的“雇佣兵债务螺旋（Debt Spiral Bug）”，即 AI 雇佣兵消耗大量月维护费加剧赤字，迫使 AI 继续借贷，直至触发破产判定。",
+    "causal_effect": "破产是游戏中毁灭性的战略打击。AI 一旦破产，其周边邻国会由于检测到其士气腰斩（$-50\\%$）而立即触发战争渴望度激增，导致破产国在数年内被周围所有国家联合宣战瓜分殆尽。"
+  },
+  {
+    "category": "ai_decision_engine",
+    "mechanism_name": "AI Tactical Army Maneuvering & Fog of War Prediction (AI 战术行军走位与战争迷雾感知算法)",
+    "source_url": "https://eu4.paradoxwikis.com/Artificial_intelligence#Military",
+    "historical_archetype": {
+      "event_or_concept": "拿破仑乌尔姆战役的大范围战略迂回包抄与内线作战原则（Interior Lines Strategy）",
+      "historical_period": "18世纪末 – 1815年",
+      "historical_context": "战役机动强调集中绝对优势兵力各个击破分散敌军，同时利用地形与侦察盲区隐蔽主力动向，在敌军尚未完成集结前将其合围。"
+    },
+    "game_design_rationale": {
+      "design_goal": "使 AI 军队在宏观大地图上实现多军团协同作战，包含寻找有利地形防守、集结主力围剿落单部队及在劣势下逃跑。",
+      "abstraction_method": "采用基于潜能场（Potential Field）与威胁度加权的 A* 图搜索算法，AI 根据邻近地块敌军兵力密度动态调整引力/斥力场。"
+    },
+    "logic_type": "State Machine",
+    "math_formula_or_weights": "$$\\text{MoveUtility}(P) = \\text{SiegeValue}(P) + \\text{FriendlySupportDensity}(P) - \\text{EnemyThreatDensity}(P) - \\text{AttritionPenalty}(P)$$\n行为模式状态机：\n1. **Siege Mode (围城态)**: 兵力达到要塞最低要求（$3 \\times \\text{FortLevel}$），留在省份推进围城进度；\n2. **Hunter-Killer Mode (猎杀态)**: 当视野内发现敌方分散小部队且自身胜率算分 $> 1.5$ 时，发出拦截行军指令；\n3. **Flee Mode (撤退逃亡态)**: 当敌方主力集结逼近且我方胜率 $< 0.7$ 时，计算全图最远离敌军威胁核心的安全要塞后方进行深远撤退。",
+    "key_parameters": [
+      {
+        "name": "AI_FOW_CHEAT_RADIUS",
+        "description": "引擎底层中 AI 能够感知玩家在黑雾中距离其前线 1-2 格内的行军意图以提前规避"
+      },
+      {
+        "name": "ARMY_ATTACH_THRESHOLD",
+        "description": "小型附庸国 AI 在战争中倾向于将部队勾选“附着（Attach）”在玩家或盟友主力军团上共同行动"
+      },
+      {
+        "name": "TERRAIN_DEFENSIVE_PREFERENCE",
+        "description": "AI 极度偏好在山地、丘陵、隔河省份设防等待敌军进攻以获取 +1/+2 防御骰点"
+      }
+    ],
+    "reverse_engineered_notes": "若玩家对某省份下达移动指令且行军锁定（Movement Lock，已走过50%进度），AI 会在当日瞬间侦测到此锁定，并依据终点计算出是否能在玩家到达日前集结更多援军实现“后发先至反包夹”。",
+    "causal_effect": "此机制使得盲目深入敌境的玩家小部队极易被多路 AI 瞬间合围歼灭，迫使玩家必须保持部队紧密互保或利用诱饵部队吸引 AI 走向劣势地形。"
+  }
+]

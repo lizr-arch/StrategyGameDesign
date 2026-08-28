@@ -1,0 +1,162 @@
+[
+  {
+    "category": "macro_economy_and_trade",
+    "mechanism_name": "Trade Value Flow, Power Projection & Steering Multiplication (贸易额流向传导、贸易力量与接力乘数模型)",
+    "source_url": "https://eu4.paradoxwikis.com/Trade",
+    "historical_archetype": {
+      "event_or_concept": "重商主义、荷兰东印度公司（VOC）与好望角/马六甲航路贸易垄断",
+      "historical_period": "16世纪 – 18世纪（地理大发现与早期全球贸易网络确立）",
+      "historical_context": "近代早期全球经济的核心在于对高价值商品（香料、丝绸、白银、瓷器）产地与关键海运咽喉（如马六甲、亚丁湾、好望角、英吉利海峡）的排他性控制。通过贸易据点与舰队护航，将远东与美洲的财富源源不断汇聚至欧洲本土终点节点（End Nodes）。"
+    },
+    "game_design_rationale": {
+      "design_goal": "模拟非对称的全球早期殖民资本主义贸易流动网络，使控制下游节点的海洋帝国能够通过商人团接力牵引（Steering）掠夺上游生产国的财富。",
+      "abstraction_method": "将全球划分为有向无环图（DAG）构成的贸易节点网络（Trade Nodes），每个节点汇聚本地生产价值并按各方贸易力量（Trade Power）比例向下游分流或就地提取（Collect）。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{LocalTradeValue} = \\sum_{\\text{provinces}} (\\text{GoodsProduced} \\times \\text{TradeGoodBasePrice})$$\n$$\\text{NodeTotalValue} = \\text{LocalTradeValue} + \\sum \\text{IncomingTradeValue}$$\n$$\\text{TradePowerShare}_i = \\frac{\\text{ProvincialPower}_i + \\text{LightShipPower}_i + \\text{MerchantPower}_i}{\\text{TotalNodeTradePower}}$$\n$$\\text{OutgoingValueToNextNode} = \\text{NodeTotalValue} \\times \\left( \\sum_{j \\in \\text{Steerers}} \\text{TradePowerShare}_j \\right) \\times \\left(1 + 0.05 \\times (1 + \\text{TradeSteeringMod}) \\right)^{N_{\\text{merchants}}}$$\n$$\\text{CollectedGold}_i = \\text{NodeTotalValue} \\times \\text{TradePowerShare}_i \\times (1 + \\text{TradeEfficiency}_i) \\quad (\\text{非主节点提取承受 } -50\\% \\text{ 力量惩罚})$$",
+    "key_parameters": [
+      {
+        "name": "Trade Steering Constant",
+        "description": "每个派出商人团且不收集贸易的国家在节点向下游导流时，提供基础 5% 的贸易额复利无中生有增殖加成"
+      },
+      {
+        "name": "End Nodes",
+        "description": "全图三大最终贸易节点（热那亚、威尼斯、英吉利海峡），只有流入没有流出，天然锁定全球财富积累"
+      },
+      {
+        "name": "Caravan Power",
+        "description": "内陆贸易节点（Inland Nodes）根据国家总发展度赋予额外的内陆商队力量（最高 +50），防止海洋舰队垄断内陆贸易"
+      }
+    ],
+    "reverse_engineered_notes": "Clausewitz 引擎在每月最后一天拓扑排序所有贸易节点，严格自上游向上游计算推进。若多个国家在分叉节点将贸易流向不同下游节点，流向分配严格按各方在此节点的相对 Trade Power 权重按比例切分向量。",
+    "causal_effect": "控制连续贸易节点链条（如从马六甲 $\\rightarrow$ 孟加拉 $\\rightarrow$ 亚丁 $\\rightarrow$ 桑给巴尔 $\\rightarrow$ 好望角 $\\rightarrow$ 象牙海岸 $\\rightarrow$ 英吉利海峡）的国家，能够通过商人的多重 Steering 乘数使最终抵达终点节点的贸易额呈指数级膨胀，获得数百倍于本土农业税收的月度财政盈余。"
+  },
+  {
+    "category": "macro_economy_and_trade",
+    "mechanism_name": "Macroeconomic Inflation, Gold Value & Loan Interest Model (宏观通货膨胀、金矿溢价与复利借贷模型)",
+    "source_url": "https://eu4.paradoxwikis.com/Economy#Inflation",
+    "historical_archetype": {
+      "event_or_concept": "16世纪欧洲价格革命（Price Revolution）与波托西银矿（Potosí Silver Influx）",
+      "historical_period": "1540年 – 1640年",
+      "historical_context": "新大陆波托西和萨卡特卡斯大量廉价白银运抵塞维利亚，导致欧洲贵金属供应激增，引发长达一个世纪的物价普遍上涨与货币购买力持续贬值，对以固定地租为生的传统封建地主造成毁灭性打击。"
+    },
+    "game_design_rationale": {
+      "design_goal": "引入经济发展中的通胀与货币贬值阻力，惩罚过度依赖不可持续的贵金属开采与短视举债，鼓励建立健康的工商业税收基础。",
+      "abstraction_method": "将通货膨胀率（Inflation）量化为百分比指数，根据金矿收入占比与单笔借款行为进行累加，直接线性等比放大全国所有维保费、军费、造船、造兵及顾问成本。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\Delta \\text{Inflation}_{\\text{annual}} = 0.5 \\times \\left( \\frac{\\text{GoldIncome}}{\\text{TotalGrossIncome}} \\right) - \\text{InflationReductionModifier}$$\n$$\\text{InflationPerLoan} = +0.10\\% \\text{ (每借入一笔标准贷款瞬间增加)}$$\n$$\\text{CostMultiplier} = 1.0 + \\left( \\frac{\\text{CurrentInflationPercentage}}{100} \\right)$$\n$$\\text{AdjustedMonthlyExpense} = \\text{BaseExpense} \\times \\text{CostMultiplier}$$\n$$\\text{Manual Reduction Cost}: 75 \\text{ 行政点数 (ADM)} \\rightarrow -2.00\\% \\text{ 通胀}$$",
+    "key_parameters": [
+      {
+        "name": "GOLD_INFLATION_THRESHOLD",
+        "description": "金矿收入占国家总财政收入的比重超过 0% 即开始线性产生通胀，占比达 100% 时每年产生 +0.5% 通胀"
+      },
+      {
+        "name": "MASTER_OF_MINT",
+        "description": "铸币大师顾问（Master of Mint），提供每年 -0.10% 的通胀自然消退加成"
+      },
+      {
+        "name": "MINE_DEPLETION_CHANCE",
+        "description": "金矿省份生产发展度（Production Dev）高于 1 时，每月根据公式 $$P = \\text{Dev} \\times 0.0001$$ 概率触发金矿枯竭事件，直接永久减半该省生产产出"
+      }
+    ],
+    "reverse_engineered_notes": "在游戏底层循环中，通货膨胀是一个全局浮点数标量（Scalar）。该标量直接挂载于所有的 `BuyAction` 与 `MonthlyMaintenanceUpdate` 虚函数中，且不受任何行政效用（Administrative Efficiency）减免。",
+    "causal_effect": "早期拥有大金矿的国家（如马里、阿兹特克、奥地利因斯布鲁克）短期内极度富裕，但若未能将金矿收入迅速转化为高行政科技与贸易工商业体系，高通胀将导致中后期部队维护费与核心化成本畸高，拖垮整个帝国财政。"
+  },
+  {
+    "category": "macro_economy_and_trade",
+    "mechanism_name": "Privateering, Trade Embargo & Imperial Mandate Erosion (私掠舰队截流、贸易禁运与大一统天命衰减算法)",
+    "source_url": "https://eu4.paradoxwikis.com/Naval_warfare#Privateering",
+    "historical_archetype": {
+      "event_or_concept": "英国女王伊丽莎白一世特许私掠船（Sea Dogs / 德雷克）、明清海禁与倭寇走私贸易网络",
+      "historical_period": "16世纪中叶 – 17世纪初（加勒比海盗黄金时代与东亚朝贡体系海疆危机）",
+      "historical_context": "近代早期强国广泛利用国家特许状（Letters of Marque）招募私掠船，在不直接宣战的前提下劫掠敌国金银舰队并封锁其海运。在东亚，走私与海盗劫掠直接破坏了明朝的朝贡贸易专营与沿海安定，导致中央帝国威权与财政动摇。"
+    },
+    "game_design_rationale": {
+      "design_goal": "提供非战争状态下的经济战手段，使弱小海军国可通过低成本私掠骚扰大国经济中心，并模拟沿海破产对大一统东方天朝天命（Mandate）体系的致命腐蚀。",
+      "abstraction_method": "将轻型战舰转变为挂黑旗的私掠舰队，直接在目标贸易节点强制凭空切割贸易力量并掠夺金币，同时将其转化为对宿敌的实力宣示（Power Projection）以及对中国皇帝天命的惩罚性扣减。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{PrivateerTradePower} = N_{\\text{LightShips}} \\times \\text{ShipTradePower} \\times (1 + \\text{PrivateerEfficiency})$$\n$$\\text{PrivateerShareInNode} = \\frac{\\text{PrivateerTradePower}}{\\text{TotalNodeTradePower} + \\text{PrivateerTradePower}}$$\n$$\\text{MonthlyGoldStolen} = \\text{NodeTotalTradeValue} \\times \\text{PrivateerShareInNode} \\times 0.5$$\n$$\\text{EmperorMandateDecay} = -0.10 \\times \\left( \\frac{\\text{PrivateeredTradePowerInCapitalNode}}{\\text{TotalCapitalNodePower}} \\right) \\times 12 \\quad (\\text{年化天命惩罚})$$\n$$\\text{PowerProjectionGain} = +10 \\times \\left( \\frac{\\text{PrivateerPowerInRivalNode}}{\\text{RivalTotalPowerInNode}} \\right) \\quad (\\text{最高上限 } +23)$$",
+    "key_parameters": [
+      {
+        "name": "PRIVATEER_EFFICIENCY",
+        "description": "私掠效率修正，由海盗共和国体制、间谍理念（Espionage）与特定国家理念大幅提升"
+      },
+      {
+        "name": "HUNT_PIRATES_PATROL",
+        "description": "防御方派遣重型舰/轻型战舰执行“巡逻捕盗（Hunt Pirates）”任务，可 1:1 抵消甚至彻底将海盗私掠力量压制归零"
+      },
+      {
+        "name": "TRADE_EMBARGO_EFFICIENCY",
+        "description": "对非宿敌国家实施贸易禁运将承受贸易效率 $-5\\%$ 惩罚，但对宿敌实施则完全免罚并增加自身力量投射"
+      }
+    ],
+    "reverse_engineered_notes": "私掠舰队掠夺的贸易收入不计入国家的贸易收集项，而是直接以“掠夺（Spoils of War）”类别无视税率与贸易效率直接按月注入国库；若私掠船在有美洲金银宝藏舰队（Treasure Fleet）路线上活动，还会定期按百分比直接截获整艘运宝船的大额现金。",
+    "causal_effect": "针对明帝国的北京或杭州节点进行大规模私掠，会使得明朝天命因“未控制的贸易流失与沿海动荡”长期处于 0 天命的溃败边缘，导致其陆军承受受伤害 $+50\\%$ 与士气大跌的致命负面效果，极易被满洲等外部游牧民族一击击溃。"
+  },
+  {
+    "category": "macro_economy_and_trade",
+    "mechanism_name": "Autonomy, Core Creation & Governing Capacity Dynamics (自治度衰减、核心化成本与统治容量惩罚模型)",
+    "source_url": "https://eu4.paradoxwikis.com/Governing_capacity",
+    "historical_archetype": {
+      "event_or_concept": "法兰西三级会议、封建贵族免税特权与近世官僚郡县制改革（Bureaucracy & Crown Lands）",
+      "historical_period": "15世纪末 – 18世纪末（柯尔贝尔主义与绝对王权行政官僚化）",
+      "historical_context": "中世纪晚期欧洲大部分省份受封建庄园法和地方三级会议自治权约束，中央政府无法直接征发赋税与兵员。国家必须通过建立总督区、赎买地方特权、收回王权领地（Crown Lands）来实现中央直辖。"
+    },
+    "game_design_rationale": {
+      "design_goal": "限制庞大帝国的无限扩张收益，模拟地方自治与官僚治理半径对财政、人力的稀释。",
+      "abstraction_method": "将省份划分为领地（Territory，自治度底限90%）、贸易公司（Trade Company，自治度底限50%）与直属州（State，自治度底限0%），并引入国家统治容量（Governing Capacity）超标软上限惩罚。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{CorinCostADM} = \\text{BaseDev} \\times 10 \\times (1 - \\text{CoreCreationCostReduction}) \\times (1 - \\text{AdminEfficiency}) \\times \\text{ClimateModifier}$$\n$$\\text{GoverningCost} = \\text{Dev} \\times \\begin{cases} 1.00 & \\text{State (直属州)} \\\\ 0.50 & \\text{Trade Company (贸易公司)} \\\\ 0.25 & \\text{Territory (领地)} \\end{cases} \\times (1 - \\text{BuildingReduction})$$\n$$\\text{GovCapOverLimitPenalty}: \\forall \\Delta \\% = \\frac{\\text{UsedCapacity} - \\text{MaxCapacity}}{\\text{MaxCapacity}} \\times 100\\% \\implies$$\n• 稳定性花费提升: $+1.0\\% \\times \\Delta \\%$\n• 侵略扩张产生加重: $+0.5\\% \\times \\Delta \\%$\n• 顾问花费增加: $+1.0\\% \\times \\Delta \\%$\n• 核心化时间与花费增加: $+0.5\\% \\times \\Delta \\%$",
+    "key_parameters": [
+      {
+        "name": "BASE_CORING_COST",
+        "description": "每点发展度基准核心化花费 10 行政点数（ADM）与 36 个月基础时间"
+      },
+      {
+        "name": "ADMINISTRATIVE_EFFICIENCY",
+        "description": "行政效用（最高 90%），按乘数大幅同等削减核心化点数花费、省份割让战争分数与扩张产生的 AE"
+      },
+      {
+        "name": "COURTHOUSE_TOWN_HALL",
+        "description": "法院（-25%）与市政厅（-50%）建筑，直接削减所在省份占用的统治容量"
+      }
+    ],
+    "reverse_engineered_notes": "若国家超出统治容量 100% 以上，不仅所有顾问费用翻倍，新征服领土的核心化点数也会成倍暴涨，导致行政点数破产无法造核，进而引发过扩（Overextension > 100%）引发全国内战与叛军海啸。",
+    "causal_effect": "促使玩家在中后期通过合理规划贸易公司、修建市政厅或提升专制度（Absolutism）以获取高行政效用，完成近代官僚集权转型。"
+  },
+  {
+    "category": "macro_economy_and_trade",
+    "mechanism_name": "Institution Propagation & Technology Cost Penalty Model (思潮全球扩散与科技超前/落后惩罚算法)",
+    "source_url": "https://eu4.paradoxwikis.com/Institutions",
+    "historical_archetype": {
+      "event_or_concept": "文艺复兴、印刷术革命、启蒙运动与大分流（The Great Divergence & Scientific Revolution）",
+      "historical_period": "1450年 – 1800年",
+      "historical_context": "近代科学革命与工业化的火种最初在西欧萌发（如意大利文艺复兴、德国印刷术、英国工业革命），随后沿着内河水系、贸易商路逐步向中欧、东欧及全球扩散，导致欧亚大陆不同文明之间出现技术与军事代差。"
+    },
+    "game_design_rationale": {
+      "design_goal": "摒弃早期版本机械死板的西方化（Westernization）与固定科技组惩罚，采用动态可互动的思潮（Institutions）扩散体系，允许非欧洲国家通过种田开发自主接纳思潮。",
+      "abstraction_method": "每隔50年生成一个新思潮，未接纳思潮的国家每年累积 +1% 科技成本惩罚（上限 +50%）；思潮通过相邻省份、港口贸易、高发展度开发（Dev Push）产生点对点连续扩散。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{TechCost} = \\text{BaseTechCost}(600) \\times (1 + \\text{AheadOfTimePenalty} + \\sum \\text{UnembracedInstitutionPenalties} - \\text{TechDiscountMods})$$\n$$\\text{AheadOfTimePenalty} = +10.0\\% / \\text{超前年数}$$\n$$\\text{UnembracedPenalty} = \\min(50\\%, +1.0\\% \\times \\text{思潮诞生后未接纳年数})$$\n$$\\text{DevPushInstitutionGrowth} = \\Delta \\text{InstitutionProgress} = \\text{CurrentProvinceDev} \\times 0.166 \\times (1 + \\text{DevCostReduction}) \\quad (\\text{单次种田点数增量})$$",
+    "key_parameters": [
+      {
+        "name": "BASE_TECH_COST",
+        "description": "单项科技研发基础消耗固定为 600 点君主力量（ADM/DIP/MIL）"
+      },
+      {
+        "name": "EMBRACEMENT_THRESHOLD",
+        "description": "全国直属州至少 10% 发展度普及该思潮方可支付国库金币正式接纳（Embrace）"
+      },
+      {
+        "name": "INNOVATIVENESS_DECAY",
+        "description": "创新度（0–100）若为世界首个点出当前科技者获得 +2 点，提供最高 -10% 全点数消耗减免"
+      }
+    ],
+    "reverse_engineered_notes": "若非欧洲国家想要避免落后 50% 科技惩罚，最核心的逆向工程玩法是“手动种田爆思潮（Dev Pushing）”：集中 2000 点左右君主点数在单一农田/草原省份连续点击发展度，使该省思潮进度直接强行拉满到 100%，随后向周围以极快速度被动扩散。",
+    "causal_effect": "未能及时接纳思潮的传统帝国（如奥斯曼晚期、明清、印度诸邦）在中后期会因科技成本高企被西欧列强在军事战术与兵种火炮数值上形成代差碾压。"
+  }
+]

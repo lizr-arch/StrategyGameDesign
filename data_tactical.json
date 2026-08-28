@@ -1,0 +1,206 @@
+[
+  {
+    "category": "tactical_and_military",
+    "mechanism_name": "Land Combat Casualties & Morale Damage Resolution (陆战伤亡与士气双轨结算算法)",
+    "source_url": "https://eu4.paradoxwikis.com/Land_warfare",
+    "historical_archetype": {
+      "event_or_concept": "古斯塔夫·阿道夫军事革命、莫里斯方阵与莫里茨连发射击战术（Early Modern Military Revolution & Linear Tactics）",
+      "historical_period": "16世纪中叶 – 18世纪末（三十年战争至七年战争）",
+      "historical_context": "近代早期欧洲军事革命见证了从早期长矛火枪混编方阵（Tercio）向强调火力线列（Linear Tactics）与炮兵协同的转变。战斗伤亡主要由火力（Fire）与肉搏冲击（Shock）两阶段交替造成，而军队溃败的主因并非全员阵亡，而是作战意志（士气 / Esprit de corps）在火力震慑与伤亡累积下的崩溃。"
+    },
+    "game_design_rationale": {
+      "design_goal": "实现兵种差异化演进（步兵中坚、骑兵侧翼冲击、炮兵后排火力支援）与双重溃败判定（全灭 vs 士气归零撤退），避免战力简单线性叠加。",
+      "abstraction_method": "将战斗离散化为每3天一轮的火力阶段（Fire Phase）与冲击阶段（Shock Phase）循环，区分兵力击杀（Casualties）与士气削减（Morale Damage），并通过前后两排宽度限制（Combat Width）模拟战线纵深。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{EffectiveRoll} = \\text{DieRoll}_{[0,9]} + \\text{LeaderPip}_{\\text{att}} - \\text{LeaderPip}_{\\text{def}} + \\text{UnitPip}_{\\text{off}} - \\text{UnitPip}_{\\text{def}} + \\text{TerrainMod} - \\text{RiverCrossing}$$\n$$\\text{BaseCasualties} = 15 + 5 \\times \\text{EffectiveRoll}$$\n$$\\text{Casualties} = \\text{BaseCasualties} \\times \\frac{\\text{AttackerStrength}}{1000} \\times \\text{TechModifier}_{\\text{phase}} \\times (1 + \\text{CombatAbility}) \\times \\frac{\\text{Discipline}_{\\text{att}}}{\\text{Tactics}_{\\text{def}}} \\times (1 + \\text{CasualtyDealt}) \\times (1 - \\text{CasualtyReceived})$$\n$$\\text{MoraleDamage} = \\text{BaseCasualties} \\times \\frac{\\text{AttackerMaxMorale}}{600} \\times \\frac{\\text{AttackerStrength}}{1000} \\times \\text{TechModifier}_{\\text{phase}} \\times (1 + \\text{CombatAbility}) \\times \\frac{\\text{Discipline}_{\\text{att}}}{\\text{Tactics}_{\\text{def}}} \\times (1 + \\text{MoraleDmgDealt}) \\times (1 - \\text{MoraleDmgReceived})$$",
+    "key_parameters": [
+      {
+        "name": "DieRoll",
+        "description": "每3天生成的伪随机数骰点，取值范围 [0, 9]"
+      },
+      {
+        "name": "TechModifier (Fire/Shock)",
+        "description": "科技等级决定的兵种基础火力/冲击修正系数，如科技5步兵冲击0.45/火力0.35，科技16炮兵基础火力大幅跃升"
+      },
+      {
+        "name": "Military Tactics",
+        "description": "军事战术值，随军科提升而增长，充当伤害除数（核心减伤防御属性）"
+      },
+      {
+        "name": "Combat Width",
+        "description": "交战宽度（随军科从15拓展至40），决定前排可参战部队上限，后排炮兵造成50%火力输出并向前排提供50%自身防御Pip"
+      },
+      {
+        "name": "Discipline",
+        "description": "纪律值，同时作为伤害乘数放大输出，并按换算比提升军事战术减少自身承受伤害"
+      }
+    ],
+    "reverse_engineered_notes": "在 Clausewitz 引擎内部，若前排部队兵力归零或士气归零撤退，后排炮兵将暴露在前排承受双倍伤害；每日造成的士气伤害直接作用于目标部队当前士气池，当前士气归零时触发溃退；若交战开始后12天内任一方士气清零且兵力比达到 10:1，触发破防歼灭（Stackwipe / 瞬间全歼）。",
+    "causal_effect": "高士气国家（如早期法国埃朗、普鲁士）能在交战初期迅速打崩敌军士气迫使其撤退；高纪律与高战术国家（如中后期普鲁士）则通过极高杀伤比持续消耗敌国人力池（Manpower），间接加速敌国兵源枯竭与厌战度飙升。"
+  },
+  {
+    "category": "tactical_and_military",
+    "mechanism_name": "Siege Progress & Markov State Transition Model (要塞围攻马尔可夫状态转移模型)",
+    "source_url": "https://eu4.paradoxwikis.com/Siege",
+    "historical_archetype": {
+      "event_or_concept": "沃邦星形要塞防御体系与攻城坑道推进法（Trace Italienne & Vauban Siege Warfare）",
+      "historical_period": "16世纪中叶 – 18世纪（八十年战争、法荷战争至大同盟战争）",
+      "historical_context": "火炮技术成熟催生了棱堡与星形要塞，使守军能够利用交叉火力抵御进攻。攻城方必须依靠逐层挖掘平行围攻壕（Parallel Trenches）、建立炮兵围攻阵地、封锁水源与补给线，经历漫长耗竭战方能迫降守军。"
+    },
+    "game_design_rationale": {
+      "design_goal": "打破早期无要塞时代的机械式全图占领（Carpet Siege），建立具有战略纵深的地缘防御支点，将攻城模拟为带有随机性与累积效应的围困过程。",
+      "abstraction_method": "以固定围城周期（Siege Tick，基准30天）为离散时间步，通过骰点（1–14）叠加攻城累积进度、炮兵数量、围城将领能力及破墙状态，匹配不同的离散围城事件状态转移。"
+    },
+    "logic_type": "Markov State Machine",
+    "math_formula_or_weights": "$$\\text{SiegeRoll} = \\text{Die}_{[1,14]} + \\text{SiegeProgress}_{[0,12]} + \\text{ArtilleryBonus}_{[0,5/8]} + \\text{GeneralSiegePip} + \\text{WallBreachMod}_{[0,3]} - \\text{FortLevel} - \\text{LocalDefensiveness} - \\text{TerrainPenalty}$$\n$$\\text{State Transition Rules}:$$\n• $\\text{SiegeRoll} \\le 1 \\rightarrow \\text{Status Quo / Disease Outbreak (进攻方阵亡 5\\% 兵力，进度 +0)}$\n• $2 \\le \\text{SiegeRoll} \\le 4 \\rightarrow \\text{Supplies Shortage (补给短缺，守军损失 1\\%，进度 +1)}$\n• $5 \\le \\text{SiegeRoll} \\le 11 \\rightarrow \\text{Food Shortage (食物匮乏，守军损失 3\\%，进度 +2)}$\n• $12 \\le \\text{SiegeRoll} \\le 13 \\rightarrow \\text{Water Shortage (水源枯竭，守军损失 5\\%，进度 +3)}$\n• $14 \\le \\text{SiegeRoll} \\le 19 \\rightarrow \\text{Defenders Desert (守军逃亡，守军损失 10\\%，进度 +2)}$\n• $\\text{SiegeRoll} \\ge 20 \\rightarrow \\text{Surrender (要塞陷落)}$\n$$\\text{Breach Probability} = P(\\text{Die} = 14) = \\frac{1}{14} \\approx 7.14\\% \\quad (\\text{使用常规火炮破墙/炮击指令时直接产生破墙标记})$$",
+    "key_parameters": [
+      {
+        "name": "SiegeProgress",
+        "description": "历史累积攻城进度，上限为 +12（对应百分比阶段逐步上升至接近100%）"
+      },
+      {
+        "name": "FortLevel",
+        "description": "要塞等级（首都天然1级，建筑提供2/4/6/8级），作为围城骰点的直接扣减惩罚"
+      },
+      {
+        "name": "LocalDefensiveness",
+        "description": "省份要塞防御度，直接延长单次围城周期长度：$$\\text{TickDuration} = 30 \\times (1 - \\text{SiegeAbility}_{\\text{att}} + \\text{Defensiveness}_{\\text{def}})$$"
+      },
+      {
+        "name": "Blockade Ratio",
+        "description": "沿海要塞若未被舰队100%完全封锁，进攻方强制承受 -2 围城骰点惩罚"
+      }
+    ],
+    "reverse_engineered_notes": "底层代码维护一个针对具体要塞的马尔可夫累积计数器；当触发破墙（Breach）时，守军遭受额外攻城突击（Assault）判定易损性，进攻方可消耗步兵人力强行发动攻城，直接与城内守军按照步兵冲击公式进行高伤亡肉搏。",
+    "causal_effect": "要塞延缓敌军推进节奏，强迫敌军聚集产生巨额损耗（Attrition），消耗其人力储备；要塞沦陷则大幅贡献战争分数（War Score），摧毁周边省份控制区并使所属国战争热情剧降。"
+  },
+  {
+    "category": "tactical_and_military",
+    "mechanism_name": "Fort Zone of Control (ZoC) & Pathfinding State Machine (要塞控制区阻断与寻路状态机)",
+    "source_url": "https://eu4.paradoxwikis.com/Zone_of_control",
+    "historical_archetype": {
+      "event_or_concept": "法兰德斯防御线（Barrier Fortresses）与边境战略要塞锁钥体系",
+      "historical_period": "17世纪后半叶 – 18世纪（路易十四扩张战争时期）",
+      "historical_context": "路易十四与其首席工程师沃邦在法国东北边境修筑了著名的双层要塞带（Pré Carré），使得敌军无法绕过未攻陷的要塞深入法国内陆，切断其补给线并限制其后勤与兵力机动。"
+    },
+    "game_design_rationale": {
+      "design_goal": "杜绝玩家与AI小部队全图无阻碍渗透穿插，构建前线防线、要塞阻隔区与安全后方腹地。",
+      "abstraction_method": "将地块划分为非控制区、要塞本体及要塞邻接控制区（ZoC）。单位进入ZoC后，其下一移动步态被强行约束，必须记录进入来源省份（Previous Province）与返回省份（Return Province）。"
+    },
+    "logic_type": "State Machine",
+    "math_formula_or_weights": "$$\\text{MoveRule}: \\forall P_{\\text{curr}} \\in \\text{ZoC}(F) \\implies P_{\\text{next}} \\in \\{ F, P_{\\text{return}} \\}$$\n状态转移规则：\n1. **进入状态 (Entry)**：当军团从地块 $A$ 移动至受未攻陷要塞 $F$ 控制的邻接地块 $B$ 时，$A$ 被标记为 $P_{\\text{return}}$。\n2. **移动锁定 (Lock)**：在 $B$ 处的军团只能选择移动至 $F$（攻打要塞）或退回 $A$（$P_{\\text{return}}$），严禁直接移动至另一 ZoC 地块 $C$。\n3. **穿越免除 (Bypass Exception)**：若军团直接从要塞 $F$ 出发，或该省份为军事通行权终点直达路径，需遵循最短路径距离回溯约束。\n4. **AI寻路特殊机制**：若 AI 能通过合法合规路径（哪怕绕行千里）到达目标地块，引擎内部 A* 寻路剪枝可能允许 AI 直接沿简化直线路径穿过由于黑雾（Fog of War）计算导致的复杂 ZoC 边界。",
+    "key_parameters": [
+      {
+        "name": "PreviousProvince",
+        "description": "进入当前 ZoC 省份前停留的最后一个合法省份"
+      },
+      {
+        "name": "ReturnProvince",
+        "description": "被要塞控制区捕获后的唯二合法撤退目标之一"
+      },
+      {
+        "name": "Friendly ZoC Overlap",
+        "description": "若某省份同时处于己方已占领要塞与敌方要塞的 ZoC 重叠区，己方要塞优先级覆盖敌方控制"
+      }
+    ],
+    "reverse_engineered_notes": "Clausewitz 引擎在每次军团发出移动指令时，调用 `CanMoveBetween(from, to)` 函数，遍历邻接省份的 Fort Controller 状态。引擎中的 AI 寻路判定与玩家完全共用同一底层判定树，但在玩家视野黑雾之外，AI 具备全图要塞开闭状态与驻军规模的确定性感知能力以避免死锁。",
+    "causal_effect": "合理的要塞布局能够封锁阿尔卑斯山口、伊比利亚比利牛斯山脉等咽喉通道，形成不可逾越的阻断线；要塞被围困攻陷后，其 ZoC 瞬间失效，敌军主力方可大规模涌入内陆腹地占领无防备省份。"
+  },
+  {
+    "category": "tactical_and_military",
+    "mechanism_name": "Naval Warfare Engagement Width & Hull Damage Mechanics (海战交战宽度、舰体耐久与士气击沉算法)",
+    "source_url": "https://eu4.paradoxwikis.com/Naval_warfare",
+    "historical_archetype": {
+      "event_or_concept": "勒班陀战役、格瑞福兰海战与特拉法尔加海战（Age of Sail Naval Doctrine）",
+      "historical_period": "1571年 – 1805年（排桨帆船时代向风帆风炮战列舰时代过渡）",
+      "historical_context": "风帆战列舰时代的海战取决于舰队交战宽度、战列线（Line of Battle）火力密集度以及舰体结构（Hull/Durability）与火炮数量（Cannons）。单舰沉没或士气崩溃撤退会向周围友舰传递士气震荡波。"
+    },
+    "game_design_rationale": {
+      "design_goal": "模拟重型战列舰（Heavy Ship）、桨帆船（Galley）在内海/公海的不同战场效能，以及海战中的连锁溃退与俘获概率。",
+      "abstraction_method": "设立海战交战宽度（Combat Width），不同舰种占据不同宽度（重舰占3格，桨帆占1格，轻舰占1格，运输船占1格）；每艘参战船只独立计算火炮伤害、舰体耐久与士气值。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{BaseHullDamage} = 0.05 \\times \\text{BaseDamage} \\times \\frac{\\text{AttackerCannons}}{\\text{DefenderHull}} \\times \\frac{\\text{AttackerDiscipline}}{\\text{DefenderTactics}} \\times (1 + \\text{ShipCombatAbility})$$\n$$\\text{NavalMoraleDamage} = \\text{BaseMoraleDamage} \\times \\frac{\\text{AttackerMaxMorale}}{300} \\times \\frac{\\text{AttackerCannons}}{\\text{DefenderHull}} \\times (1 + \\text{MoraleDmgDealt})$$\n$$\\text{Ship Sunk/Morale Splash Penalty}: \\forall \\text{Ship Sunk} \\implies \\Delta \\text{Morale}_{\\text{Fleet}} = -0.025 \\times \\frac{\\text{ShipWidth}}{\\text{TotalFleetWidth}}$$\n$$\\text{Capture Chance} = \\text{BaseCaptureRate} \\times (1 + \\text{AdmiralManeuver} \\times 0.05 + \\text{CaptureModifier})$$",
+    "key_parameters": [
+      {
+        "name": "Heavy Ship Width (3)",
+        "description": "重型战舰占用3格宽度，但拥有极高火炮数与超强舰体抗伤能力"
+      },
+      {
+        "name": "Galley Inland Sea Bonus (+100%)",
+        "description": "桨帆船在内海（如地中海、波罗的海）获得 +100% 伤害加成，效费比碾压重舰"
+      },
+      {
+        "name": "Naval Engagement Width",
+        "description": "由将领机动值（Maneuver）与海军科技决定的单线接敌舰队宽度上限"
+      }
+    ],
+    "reverse_engineered_notes": "海战中船只士气归零后不会撤出战场，而是退至后方漂浮；若整支舰队士气归零前未能成功脱离交战，所有漂浮的零士气舰船将面临极高的被击沉或被俘获概率。",
+    "causal_effect": "夺取制海权（Thalassocracy）能够实现全图海岸线无缝封锁（Blockade），直接剥夺敌国沿海贸易力量并为沿海要塞围攻提供 +2 骰点支持，同时威胁敌方首都。"
+  },
+  {
+    "category": "tactical_and_military",
+    "mechanism_name": "Leader Pip Generation & Military Tradition Decay (将领属性生成与军统衰减算法)",
+    "source_url": "https://eu4.paradoxwikis.com/Military_tradition",
+    "historical_archetype": {
+      "event_or_concept": "普鲁士总参谋部前身与常备军职业军官团职业化（Professionalization of Officer Corps）",
+      "historical_period": "17世纪中叶 – 18世纪末",
+      "historical_context": "持续的高强度战争锤炼出经验丰富的高级将领与参谋人才。和平时期的军备松弛会导致实战经验衰退，而唯有建立系统的军官学院与常备军体制方能维持高军事传统。"
+    },
+    "game_design_rationale": {
+      "design_goal": "将战争经历转化为国家军事软实力积淀，形成高战意高军统与和平期自然衰减的动态平衡。",
+      "abstraction_method": "将陆军/海军传统（0–100）作为核心资源池，每年基础自然衰减 5%，并在招募将领时充当正态随机数加权基数，生成火力/冲击/机动/攻城四大 Pip。"
+    },
+    "logic_type": "Probability Distribution",
+    "math_formula_or_weights": "$$\\Delta \\text{Tradition}_{\\text{annual}} = -5.0\\% + \\sum \\text{DecayReduction} + \\sum \\text{AnnualGainFromForts/Battles}$$\n$$\\text{EffectiveTraditionScore} = \\text{CurrentTradition} + 20 \\times \\text{IdeaBonus}$$\n$$\\text{TotalPipPool} = \\text{BinomialDistribution}\\left(n=17, p = 0.5 + \\frac{\\text{EffectiveTraditionScore}}{200}\\right) + \\text{GuaranteedPips}$$\n属性分配逻辑：\n• 将总 Pip 池随机抛洒到 Fire, Shock, Maneuver, Siege 四项\n• 攻城 Pip 权重为其他属性的 1/3（默认分配概率极低）",
+    "key_parameters": [
+      {
+        "name": "ARMY_TRADITION_DECAY",
+        "description": "每年基础自然流失 5%（可通过要塞维护、贵族理念与政策降低至 1%）"
+      },
+      {
+        "name": "MAX_GENERAL_PIPS",
+        "description": "将领单项属性理论上限为 6 Pip（全属性极限为 6/6/6/6）"
+      },
+      {
+        "name": "SIEGE_PIP_WEIGHT",
+        "description": "攻城点数的生成权重硬编码为低概率，1点攻城Pip相当于要塞围攻中的额外加农炮支援"
+      }
+    ],
+    "reverse_engineered_notes": "战斗获取陆军传统的公式为：$$\\text{TraditionGain} = 20 \\times \\frac{\\text{CasualtiesSuffered}}{\\text{TotalForceLimit}}$$，这意味着在惨烈的血战中哪怕战败，只要战损占本国上限比例高，也能获取大量军事传统。",
+    "causal_effect": "高陆统（80+）提供 +10% 陆军士气与 +5% 陆军回复速度，且持续产出 5-6 星神将，在战场上产生绝对点数压制优势。"
+  },
+  {
+    "category": "tactical_and_military",
+    "mechanism_name": "Manpower Pool Recovery & Attrition Calculus (国家人力池月度恢复与非战斗损耗模型)",
+    "source_url": "https://eu4.paradoxwikis.com/Manpower",
+    "historical_archetype": {
+      "event_or_concept": "三十年战争德意志人口锐减与大北方战争瑞典极寒长征（General Frost & Demographics）",
+      "historical_period": "1618年 – 1721年",
+      "historical_context": "早期现代战争中，死于斑疹伤寒、霍乱、冻伤与饥荒的士兵数量远超战死沙场者。大军在敌国境内行军时若缺乏充足后勤补给，冬季与恶劣地形将迅速吞噬整支军队。"
+    },
+    "game_design_rationale": {
+      "design_goal": "限制无节制的大规模行军，将后勤补给上限（Supply Limit）与自然损耗（Attrition）作为兵力调动的重要战略制约。",
+      "abstraction_method": "建立基于全国军事发展度的最大人力池（Manpower Pool），设定基准10年（120个月）完全恢复周期，并在军队规模超过省份补给上限或处于冬季/恶劣地形时扣减月度损耗。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{MaxManpower} = \\sum_{\\text{provinces}} (\\text{MilitaryDev} \\times 250 \\times (1 - \\text{LocalAutonomy})) \\times (1 + \\text{NationalManpowerMod}) + 10000$$\n$$\\text{MonthlyManpowerRecovery} = \\frac{\\text{MaxManpower}}{120} \\times (1 + \\text{ManpowerRecoverySpeed})$$\n$$\\text{MonthlyAttritionRate} = \\max\\left(\\text{BaseTerrainAttrition} + \\text{WinterMod} + \\text{HostileDefensiveness}, \\frac{\\text{ArmyWeight} - \\text{SupplyLimit}}{\\text{SupplyLimit}} \\times 5\\%\\right) \\quad (\\text{上限默认 5\\%})$$\n$$\\text{ManpowerDepletion} = \\text{ArmySize} \\times \\text{MonthlyAttritionRate}$$",
+    "key_parameters": [
+      {
+        "name": "MAX_ATTRITION_CAP",
+        "description": "Defines.lua 中默认最高月损耗封顶为 5.0%（防止单月部队瞬间蒸发）"
+      },
+      {
+        "name": "SUPPLY_LIMIT_FACTOR",
+        "description": "省份补给上限由省份发展度、地形（山地较少，平原较多）与控制者科技等级决定"
+      },
+      {
+        "name": "MANPOWER_RECOVERY_BASE_MONTHS",
+        "description": "人力池从 0 恢复至满额的理论基准耗时为 120 个月（10年）"
+      }
+    ],
+    "reverse_engineered_notes": "若国家人力池归零，前线受损部队仍会尝试补员，但由于无可用人力，补员率将归零，部队编制将持续空心化；此时必须依靠极度昂贵的雇佣兵（Mercenaries）维持战线。",
+    "causal_effect": "漫长的俄罗斯冬季围城或山地行军会导致进攻方单场战争因非战斗损耗损失数十万人力，使国库被巨额补员费用拖垮。"
+  }
+]

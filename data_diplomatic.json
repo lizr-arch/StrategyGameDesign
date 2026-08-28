@@ -1,0 +1,162 @@
+[
+  {
+    "category": "diplomatic_and_dynastic",
+    "mechanism_name": "Dynastic Succession & 75/20/5 Year Cycle (同君联合与75/20/5年三相演化周期算法)",
+    "source_url": "https://eu4.paradoxwikis.com/Personal_union",
+    "historical_archetype": {
+      "event_or_concept": "西班牙王位继承战争、卡尔马联盟与哈布斯堡王朝政治联姻联统网络（Bella gerant alii, tu felix Austria nube）",
+      "historical_period": "15世纪末 – 18世纪初（查理五世帝国至西班牙哈布斯堡绝嗣）",
+      "historical_context": "近代早期欧洲君主制国家的领土主权与王室血脉高度绑定。由于频繁的近亲通婚与高婴儿夭折率，王朝绝嗣极其普遍。没有直系继承人的君主去世，往往直接引发两个或多个大国之间的王位继承战争与国家合并。"
+    },
+    "game_design_rationale": {
+      "design_goal": "高度还原欧洲近代特色的王室联姻（Royal Marriage）与同君联合（Personal Union）扩张路径，将复杂宗族继承博弈转化为一套包含随机性与周期律的精密系统。",
+      "abstraction_method": "基于全球伪随机种子与国家地块ID，将时间轴划分为三个不同性质的循环阶段（Phase 0: 传播王朝 / Phase 1: 联统与继承战争 / Phase 2: 直接吞并继承），配合国家发展度阶梯（Tier）进行仲裁。"
+    },
+    "logic_type": "Probability Distribution",
+    "math_formula_or_weights": "$$\\text{CycleStep} = (\\text{DeathDay} + \\text{CapitalProvinceID} + \\text{TotalDev}) \\pmod{100}$$\n周期三相阶段划分（基准 75 / 20 / 5 年法则）：\n1. **Phase 0 (0–74，占比75%) $\\rightarrow$ 王朝传播/贵族继位**:\n若无联姻，由本国同文化贵族继位；若有联姻，发展度最高的联姻国其家族王朝（Dynasty）成功入主该国王位。\n2. **Phase 1 (75–94，占比20%) $\\rightarrow$ 同君联合与王位继承战争 (Succession War)**:\n该国沦为某联姻强国的初级附庸（Junior Partner），同时触发继承战争，由潜在最大竞争对手（Rival / 最大军力联姻国）发起挑战。\n3. **Phase 2 (95–99，占比5%) $\\rightarrow$ 直接领土继承吞并 (Direct Inheritance)**:\n该国领土被最高权重联姻国瞬间全境直接继承（无需联统，全境直接变成本土核心），要求被继承国省份总数不超过规定阈值。\n\n$$\\text{Direct Inheritance Chance} = (\\text{DipRep} \\times 5) + (\\text{Stability} \\times 1) + 5 - (\\text{TargetProvinceCount} \\times 1)$$",
+    "key_parameters": [
+      {
+        "name": "Nation Military Tier",
+        "description": "国家按自主发展度（Autonomy-modified Dev）划分为 Tier 1 (大国)、Tier 2、Tier 3，高阶国家不可被低阶国家在 Phase 1 直接和平联统"
+      },
+      {
+        "name": "Atwix Succession Constant",
+        "description": "社区逆向大师 Atwix 发现的周期跳变机制：一旦世界有新教皇加冕或神罗皇帝更迭，内部循环种子立即刷新"
+      },
+      {
+        "name": "Prestige Threshold",
+        "description": "发起联统或传播王朝的国家，其威望（Prestige）必须严格高于目标国"
+      }
+    ],
+    "reverse_engineered_notes": "在游戏源代码中，君主去世时的结算事件由引擎在当月第1帧根据 `(GetYear() * 365 + GetDay() + country_tag_hash) % 100` 计算得出。若目标国处于交战状态（At War），则绝对锁死不会发生联统或直接继承，只会在王朝绝嗣时自动生成本地贵族君主以保护游戏战时状态不崩溃。",
+    "causal_effect": "玩家可通过精准控制目标国战争状态、在 Phase 1 窗口期利用王室联姻触发联统，或通过强索王位（Claim Throne）跳过漫长伪随机等待，实现一战吞并大国版图的战略跃迁。"
+  },
+  {
+    "category": "diplomatic_and_dynastic",
+    "mechanism_name": "Succession War & Throne Claiming Decision Tree (王位继承战争与强索王位竞合仲裁树)",
+    "source_url": "https://eu4.paradoxwikis.com/Personal_union#Succession_war",
+    "historical_archetype": {
+      "event_or_concept": "西班牙王位继承战争（War of the Spanish Succession）与奥地利王位继承战争",
+      "historical_period": "1701年 – 1714年（波旁家族与哈布斯堡家族争夺卡洛斯二世遗产）",
+      "historical_context": "卡洛斯二世绝嗣导致法兰西路易十四之孙与神圣罗马帝国查理大公同时主张王位。欧洲列强为防止法西合并打破欧陆均势，组成反法大同盟介入，爆发了波及欧陆与美洲殖民地的全面大战。"
+    },
+    "game_design_rationale": {
+      "design_goal": "为大国间的联统扩张设置高昂的战争制衡成本，确保任何通过王室绝嗣获得庞大附庸的行为都必须经受地缘敌对阵营的武力检验。",
+      "abstraction_method": "在联统触发瞬间，算法自动遴选出一位“合法防守继承方（Defender）”与一位“合法进攻挑战方（Attacker/Contestant）”，并赋予挑战方专属的王位继承宣战借口或直接开启战争对话框。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{Defender Selection}: \\operatorname*{argmax}_{C \\in \\text{Marriages}} (\\text{AutonomyModifiedDev}_C)$$\n$$\\text{Contestant (Attacker) Selection Priority}:$$\n1. **第一优先级 (Rival)**: 防守继承国的所有宿敌（Rival）中，陆军实力最强者；\n2. **第二优先级 (Dynasty Share)**: 与被继承国共享同一种王朝血脉且发展度最高的联姻国；\n3. **第三优先级 (Royal Marriage)**: 其他与被继承国存在联姻关系且军力排名前列的国家；\n4. **弃权判定**: 若被选定挑战方的 AI 计算得出胜率不足（War Desirability $< 0$），挑战方可选择放弃挑战，防守方和平获得同君联合。",
+    "key_parameters": [
+      {
+        "name": "CLAIM_THRONE_REQUIREMENT",
+        "description": "强索王位条件：共享王朝 + 目标国处于无继承人或继承人弱宣称（Weak Claim） + 自身威望高于目标国"
+      },
+      {
+        "name": "CB_CLAIM_THRONE_WARSCORE",
+        "description": "通过强索王位宣战借口在和约中强制执行同君联合的战争分数固定为 84% 基准值"
+      },
+      {
+        "name": "JUNIOR_LIBERTY_DESIRE",
+        "description": "初级附庸独立倾向：根据其自身相对母国军力比率、君王外交声誉及好感度综合计算，超过50%将拒绝参战并寻求外部大国独立保证"
+      }
+    ],
+    "reverse_engineered_notes": "若玩家主动执行“强索王位（Claim Throne）”，会瞬间对所有其他联姻国产生高达 -100 的好感惩罚，并丢失 20 点威望；底层逻辑将强行将该国在继承战争仲裁树中的优先级直接拔高至绝对首位。",
+    "causal_effect": "继承战争往往演变为全欧世界大战。即使成功建立联统，初级附庸若发展度远超母国，其独立倾向（Liberty Desire）将长期居高不下，引来外部敌对大国支持独立（Support Independence），使母国陷入内外交困。"
+  },
+  {
+    "category": "diplomatic_and_dynastic",
+    "mechanism_name": "Aggressive Expansion (AE) Propagation & Coalition Calculus (侵略扩张衰减扩散与反国家包围网算法)",
+    "source_url": "https://eu4.paradoxwikis.com/Aggressive_expansion",
+    "historical_archetype": {
+      "event_or_concept": "康布雷同盟战争（League of Cambrai）与反法同盟（Coalitions against Napoleon）",
+      "historical_period": "1508年（威尼斯扩张引发的多国围剿）及 1792–1815年（七次反法同盟）",
+      "historical_context": "在近代欧洲均势政治下，任何单一强权若试图打破现状、通过吞并邻国迅速扩张，均会引发周边所有受威胁势力的剧烈恐慌，促使意识形态与地缘利益迥异的国家迅速结成跨国大同盟实施武装惩戒。"
+    },
+    "game_design_rationale": {
+      "design_goal": "核心反滚雪球（Anti-snowballing）机制，限制玩家与强力 AI 的无限制领土扩张速度，维持长期的地缘博弈张力。",
+      "abstraction_method": "每次割地或非法吞并都会根据地块发展度产生基础侵略扩张度（AE），随后经由宗教、文化、地理距离及神圣罗马帝国（HRE）属性进行多重乘算放大，并向全图传播。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{GeneratedAE} = \\text{BaseDev} \\times \\text{CBPenalty} \\times (1 - \\text{AEImpactModifiers}) \\times \\prod M_k$$\n$$\\text{Multipliers } (M_k):$$\n• $\\text{Distance Factor}: 1.0 - (\\text{DistanceInPixels} \\times 0.001)$\n• $\\text{Same Religion}: +50\\% \\text{ (若与受害者同宗教)}, \\text{ Same Religion Group}: +25\\%$\n• $\\text{Same Culture}: +50\\%, \\text{ Same Culture Group}: +25\\%$\n• $\\text{HRE Province}: +50\\% \\text{ (若被割让省份属于神罗帝国)}$\n• $\\text{HRE Member Target}: +50\\% \\text{ (若吞并方同为神罗成员国)}$\n\n$$\\text{Coalition Trigger Conditions}:$$\n$$\\begin{cases} \\text{Country } i \\text{ has } \\text{AE} \\ge 50 \\text{ against Target} \\\\ \\text{Opinion of Target} < 0 \\\\ \\text{No Active Truce (无有效停战协议)} \\\\ \\text{Valid Coalition Members Count} \\ge 4 \\end{cases}$$\n\n$$\\text{Annual AE Decay} = 2.0 \\times (1 + \\text{ImproveRelationsModifier})$$",
+    "key_parameters": [
+      {
+        "name": "COALITION_MIN_MEMBERS",
+        "description": "Defines.lua 中硬编码的包围网成立最低国家数（默认 4 国）"
+      },
+      {
+        "name": "IMPROVE_RELATIONS",
+        "description": "外交互动属性“改善关系”，直接决定每年12月31日结算时 AE 负面关系的自然消退速率"
+      },
+      {
+        "name": "HOLY_ROMAN_EMPIRE_MODIFIER",
+        "description": "神罗内部极高的 AE 惩罚叠加，导致在北意大利与德意志地区吞并少量高发展度省份即产生巨额 AE"
+      }
+    ],
+    "reverse_engineered_notes": "包围网在底层被定义为一个特殊的超国家外交实体（Coalition Entity）。一旦其中任一成员国对目标宣战，所有其他包围网成员强制被无条件拉入战争且无法单独媾和（Cannot negotiate individual peace）；包围网解散判定依赖于成员国对目标国 AE 降至 0 或全体成员军力总和显著弱于目标国与盟友军力。",
+    "causal_effect": "AE 是玩家扩张节奏的硬刹车。无视 AE 将直接导致全欧范围内从马穆鲁克到英国的庞大包围网瞬间成型，形成灭国级的多线围剿战争。"
+  },
+  {
+    "category": "diplomatic_and_dynastic",
+    "mechanism_name": "Diplomatic Subject Annexation & Integration Calculus (附庸外交兼并与月度点数扣除模型)",
+    "source_url": "https://eu4.paradoxwikis.com/Vassal#Annexation",
+    "historical_archetype": {
+      "event_or_concept": "法兰西王国整合布列塔尼与勃艮第领地、英格兰与苏格兰联合法案（State Centralization）",
+      "historical_period": "15世纪末 – 1707年",
+      "historical_context": "近代绝对主义中央集权国家逐步消解中世纪封建领主自治权，通过官僚派驻、法律统合与司法赎买，将封建封臣领地和平彻底吸纳为国家直接管辖省份。"
+    },
+    "game_design_rationale": {
+      "design_goal": "提供和平扩张手段，将外交点数（DIP）转化为直接领土，平衡行政点数（ADM）核心化的过重负担。",
+      "abstraction_method": "以附庸国总发展度为基准计算总外交点数消耗，每月根据宗主国外交声誉、同文化/同宗教修正扣除点数并推进吞并百分比。"
+    },
+    "logic_type": "Deterministic Formula",
+    "math_formula_or_weights": "$$\\text{TotalCostDIP} = \\text{TargetTotalDev} \\times 8 \\times (1 - \\text{DiplomaticAnnexCostReduction}) \\times (1 + \\text{AllLocalAutonomyModifier})$$\n$$\\text{MonthlyDIPSpend} = \\left( 2 + \\text{DiplomaticReputation} + \\text{SameCultureGroupBonus}_{(+1)} + \\text{SameReligionBonus}_{(+1)} \\right) \\times \\text{DIPPolicyMultiplier}$$\n$$\\text{ProgressPerMonth} = \\frac{\\text{MonthlyDIPSpend}}{\\text{TotalCostDIP}} \\times 100\\%$$\n吞并完成惩罚：\n• 宗主国获得持续10年的“吞并附庸国”负面修正：外交声誉 $-3.0$\n• 所有其他现有附庸国对宗主国好感度瞬间 $-30$",
+    "key_parameters": [
+      {
+        "name": "BASE_ANNEX_COST_PER_DEV",
+        "description": "每点被吞并发展度基础消耗 8 点外交点数（DIP）"
+      },
+      {
+        "name": "DIP_REP_STALL_TRIGGER",
+        "description": "若宗主国外交声誉跌至极低导致 MonthlyDIPSpend $\\le 0$，兼并进程将彻底停滞陷入僵死状态"
+      },
+      {
+        "name": "LIBERTY_DESIRE_HALT",
+        "description": "兼并过程中附庸独立倾向一旦升至 50% 以上，吞并进度即刻冻结"
+      }
+    ],
+    "reverse_engineered_notes": "若宗主国在兼并过程中陷入外交点数透支（DIP 点数负数），引擎仍会允许继续扣减，但会导致科技升级被严重滞后；若在吞并完成前附庸国领土被叛军或外部敌国割走，总花费会动态实时重新计算。",
+    "causal_effect": "外交声誉的 $-3$ 减益会严重削弱宗主国维持其他大国同盟与控制其他附庸独立倾向的能力，形成连续吞并附庸时的“外交脆弱期”。"
+  },
+  {
+    "category": "diplomatic_and_dynastic",
+    "mechanism_name": "Papacy Influence & Curia Controller Election (教皇影响力投资与教廷控制权泊松抽签模型)",
+    "source_url": "https://eu4.paradoxwikis.com/Papacy",
+    "historical_archetype": {
+      "event_or_concept": "文艺复兴时期教皇秘密会议与博吉亚、美第奇家族对教皇宝座的争夺（Papal Conclave）",
+      "historical_period": "1444年 – 16世纪初（亚历山大六世、尤利乌斯二世时代）",
+      "historical_context": "天主教世界最高宗教领袖不仅掌握破门绝罚（Excommunication）与圣战号召权，更是欧洲政治仲裁者。法兰西、西班牙与神圣罗马帝国通过金钱、枢机主教（Cardinals）席位渗透罗马教廷以夺取控制权。"
+    },
+    "game_design_rationale": {
+      "design_goal": "模拟天主教国家对跨国宗教权力的争夺与投资博弈，为天主教阵营提供独特的超国家战略收益。",
+      "abstraction_method": "各国将积累的教皇影响力（Papal Influence）兑换为教皇选举投资点数（Invested Papal Points），当现任教皇去世时，按各国投资点数在全欧总池中的占比进行加权随机抽签。"
+    },
+    "logic_type": "Probability Distribution",
+    "math_formula_or_weights": "$$\\text{ElectionChance}_i = \\frac{\\text{InvestedPoints}_i}{\\sum_{j \\in \\text{CatholicNations}} \\text{InvestedPoints}_j} \\times 100\\%$$\n$$\\text{Curia Controller Benefits}:$$\n• 外交声誉 $+1.0$，外交关系槽位 $+2$\n• 侵略扩张影响 (AE Impact) $-20\\%$\n• 顾问维护费 $-20\\%$，全国科技花费 $-5\\%$\n• 特权指令：可直接破门绝罚（Excommunicate）好感度为负的统治者，或发动教皇十字军圣战（Crusade）",
+    "key_parameters": [
+      {
+        "name": "PAPAL_INVEST_COST",
+        "description": "每次向教廷候选池投入点数消耗固定递增（5, 10, 15, 20... 点教皇影响力）"
+      },
+      {
+        "name": "CARDINAL_COUNT",
+        "description": "全欧最多维持 49 名枢机主教席位，拥有枢机主教的省份每年持续自动产出教皇影响力"
+      },
+      {
+        "name": "EXCOMMUNICATION_CB",
+        "description": "被破门绝罚国家周边的所有天主教邻国均获得极低 AE 割地的专属破门宣战借口"
+      }
+    ],
+    "reverse_engineered_notes": "在现任教皇去世的当天Tick，引擎生成一个 `[0, TotalInvested]` 之间的随机数，落入哪个国家的累积区间，该国即刻被赋予 `curia_controller` 全局修饰符，同时全欧所有国家的投资点数池瞬间归零重置。",
+    "causal_effect": "教廷控制者享有的 $-20\\%$ AE 减免与破门绝罚宣战借口，使得天主教强权能在欧洲天主教腹地以极低包围网代价发动闪电扩张。"
+  }
+]
