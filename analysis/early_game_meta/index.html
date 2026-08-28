@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>战略游戏前30天/回合 玩家 vs AI 逐日微操与收益全景看板 (文明 / EU4 / HoI2 / 冷兵器MOD)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: "#d4af37",
+              goldlight: "#f5d77f",
+              crimson: "#881337",
+              slatebg: "#090d16",
+              cardbg: "#111827",
+              cardborder: "#1f2937"
+            }
+          },
+          fontFamily: {
+            serif: ["Cinzel", "Georgia", "Cambria", "serif"],
+            sans: ["Inter", "system-ui", "-apple-system", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #172033 0%, #090d16 75%, #05070b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .gold-glow { box-shadow: 0 0 25px -5px rgba(212, 175, 55, 0.25); }
+    .gold-border { border: 1px solid rgba(212, 175, 55, 0.35); }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0b0f19; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #2a3449; border-radius: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+  </style>
+</head>
+<body class="font-sans antialiased custom-scroll selection:bg-brand-gold selection:text-black">
+
+  <!-- HEADER -->
+  <header class="border-b border-brand-cardborder bg-brand-slatebg/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-gold to-brand-crimson p-0.5 shadow-lg flex items-center justify-center">
+          <div class="w-full h-full bg-brand-slatebg rounded-[7px] flex items-center justify-center">
+            <i class="fa-solid fa-chart-line text-brand-gold text-lg"></i>
+          </div>
+        </div>
+        <div>
+          <h1 class="font-serif text-lg sm:text-xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brand-goldlight via-brand-gold to-amber-200">
+            战略游戏前 30 天/回合 玩家 vs AI 逐日微操与收益全景看板
+          </h1>
+          <p class="text-xs text-slate-400 font-mono">Civ VI · EU4 1444 · HoI2 1936 · 国内冷兵器(春秋/三国) · 国外冷兵器(罗马/中世纪)</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 text-xs font-medium">
+        <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 text-brand-gold font-semibold border border-brand-gold/40 shadow-sm">
+          <i class="fa-solid fa-gauge-high"></i> 总览仪表盘
+        </button>
+        <button onclick="switchTab('civ')" id="tab-btn-civ" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+          <i class="fa-solid fa-monument"></i> 《文明VI》
+        </button>
+        <button onclick="switchTab('eu4')" id="tab-btn-eu4" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+          <i class="fa-solid fa-crown"></i> 《EU4原版》
+        </button>
+        <button onclick="switchTab('hoi2')" id="tab-btn-hoi2" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+          <i class="fa-solid fa-industry"></i> 《HoI2》
+        </button>
+        <button onclick="switchTab('chinacold')" id="tab-btn-chinacold" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+          <i class="fa-solid fa-shield-halved text-red-400"></i> 🇨🇳 国内冷兵器(春秋/三国)
+        </button>
+        <button onclick="switchTab('foreigncold')" id="tab-btn-foreigncold" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+          <i class="fa-solid fa-chess-rook text-blue-400"></i> 🌍 国外冷兵器(罗马/中世纪)
+        </button>
+        <button onclick="switchTab('macro')" id="tab-btn-macro" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+          <i class="fa-solid fa-table-columns"></i> 宏观对比
+        </button>
+      </nav>
+
+      
+      <div class="flex items-center gap-2">
+        <a href="../../index.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition-colors">
+          <i class="fa-solid fa-house"></i> 仓库总站
+        </a>
+        <a href="../eu4/index.html" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600/40 to-cyan-500/30 text-xs font-bold text-cyan-300 border border-cyan-500/50 hover:border-cyan-400 hover:bg-cyan-500/40 transition-all shadow-md">
+          <i class="fa-solid fa-crown text-cyan-400"></i> EU4 核心算法与沙盘系统 <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  
+  <!-- FLOATING QUICK NAVIGATION DOCK -->
+  <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+    <a href="../../index.html" class="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/95 text-slate-300 border border-slate-700 shadow-xl backdrop-blur-md hover:bg-slate-800 hover:scale-105 transition-all text-xs font-bold">
+      <i class="fa-solid fa-house text-amber-400 text-sm"></i>
+      <span>返回仓库总站 (Portal)</span>
+    </a>
+    <a href="../eu4/index.html" class="flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900/95 text-cyan-300 border-2 border-cyan-500/60 shadow-2xl backdrop-blur-md hover:bg-cyan-500/20 hover:scale-105 transition-all text-xs font-bold">
+      <i class="fa-solid fa-crown text-cyan-400 text-sm"></i>
+      <span>切换至：EU4 核心算法与6大演算沙盘</span>
+      <i class="fa-solid fa-arrow-right text-xs"></i>
+    </a>
+  </div>
+
+      <div class="space-y-2">
+        <input type="range" id="global-turn-slider" min="1" max="30" value="1" oninput="updateDailyTimeline(this.value)"
+               class="w-full h-2.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-amber-500">
+        <div class="flex justify-between text-[11px] font-mono text-slate-500">
+          <span>第 1 天/回 (开局暂停/变法/集结/分封)</span>
+          <span>第 10 天/回 (初探/间谍/离间/消不满)</span>
+          <span>第 20 天/回 (万神殿/断水绝粮/云梯强攻)</span>
+          <span>第 30 天/回 (二城落地/郡县霸业/地中海帝国)</span>
+        </div>
+      </div>
+
+      <!-- 5-Game Turn Snapshot Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
+        <!-- Civ Snapshot -->
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold text-amber-400">
+            <span><i class="fa-solid fa-monument"></i> 《文明VI》</span>
+            <span class="text-[10px] text-slate-500">T<span id="civ-turn-disp">1</span></span>
+          </div>
+          <div id="civ-snap-player" class="text-[11px] text-slate-300 bg-slate-900/90 p-2 rounded-lg leading-tight h-16 overflow-y-auto custom-scroll"></div>
+          <div id="civ-snap-roi" class="text-[10px] text-amber-300/90 bg-amber-950/30 border border-amber-500/20 p-2 rounded-lg leading-tight h-20 overflow-y-auto custom-scroll"></div>
+        </div>
+
+        <!-- EU4 Vanilla Snapshot -->
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold text-cyan-400">
+            <span><i class="fa-solid fa-crown"></i> 《EU4原版》</span>
+            <span class="text-[10px] text-slate-500">D<span id="eu4-turn-disp">1</span></span>
+          </div>
+          <div id="eu4-snap-player" class="text-[11px] text-slate-300 bg-slate-900/90 p-2 rounded-lg leading-tight h-16 overflow-y-auto custom-scroll"></div>
+          <div id="eu4-snap-roi" class="text-[10px] text-cyan-300/90 bg-cyan-950/30 border border-cyan-500/20 p-2 rounded-lg leading-tight h-20 overflow-y-auto custom-scroll"></div>
+        </div>
+
+        <!-- HoI2 Snapshot -->
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold text-rose-400">
+            <span><i class="fa-solid fa-industry"></i> 《HoI2》</span>
+            <span class="text-[10px] text-slate-500">D<span id="hoi2-turn-disp">1</span></span>
+          </div>
+          <div id="hoi2-snap-player" class="text-[11px] text-slate-300 bg-slate-900/90 p-2 rounded-lg leading-tight h-16 overflow-y-auto custom-scroll"></div>
+          <div id="hoi2-snap-roi" class="text-[10px] text-rose-300/90 bg-rose-950/30 border border-rose-500/20 p-2 rounded-lg leading-tight h-20 overflow-y-auto custom-scroll"></div>
+        </div>
+
+        <!-- China Cold Weapon Snapshot -->
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold text-red-400">
+            <span><i class="fa-solid fa-shield-halved"></i> 🇨🇳 春秋/三国</span>
+            <span class="text-[10px] text-slate-500">D<span id="china-turn-disp">1</span></span>
+          </div>
+          <div id="china-snap-player" class="text-[11px] text-slate-300 bg-slate-900/90 p-2 rounded-lg leading-tight h-16 overflow-y-auto custom-scroll"></div>
+          <div id="china-snap-roi" class="text-[10px] text-red-300/90 bg-red-950/30 border border-red-500/20 p-2 rounded-lg leading-tight h-20 overflow-y-auto custom-scroll"></div>
+        </div>
+
+        <!-- Foreign Cold Weapon Snapshot -->
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold text-blue-400">
+            <span><i class="fa-solid fa-chess-rook"></i> 🌍 罗马/中世纪</span>
+            <span class="text-[10px] text-slate-500">D<span id="foreign-turn-disp">1</span></span>
+          </div>
+          <div id="foreign-snap-player" class="text-[11px] text-slate-300 bg-slate-900/90 p-2 rounded-lg leading-tight h-16 overflow-y-auto custom-scroll"></div>
+          <div id="foreign-snap-roi" class="text-[10px] text-blue-300/90 bg-blue-950/30 border border-blue-500/20 p-2 rounded-lg leading-tight h-20 overflow-y-auto custom-scroll"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: DASHBOARD VIEW -->
+    <div id="view-dashboard" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-slate-900/70 border border-slate-800 p-4 rounded-2xl">
+          <div class="flex items-center justify-between text-xs text-amber-400 font-semibold">
+            <span>《文明 VI》(Civ 6)</span>
+            <i class="fa-solid fa-monument"></i>
+          </div>
+          <div class="mt-2 text-xl font-bold text-slate-100">Turn 1 – 30 全景</div>
+          <div class="text-xs text-slate-400 mt-1">2粮2锤坐城、抢首发使节、卡蛮族视野、万神殿《宗教移民》送开拓者</div>
+        </div>
+
+        <div class="bg-slate-900/70 border border-slate-800 p-4 rounded-2xl">
+          <div class="flex items-center justify-between text-xs text-cyan-400 font-semibold">
+            <span>《EU4 原版》(1444)</span>
+            <i class="fa-solid fa-crown"></i>
+          </div>
+          <div class="mt-2 text-xl font-bold text-slate-100">Day 1 – 31 破局</div>
+          <div class="text-xs text-slate-400 mt-1">阶层特权每年榨36点数、关要塞降军费、12.11 自由佣兵早战破局</div>
+        </div>
+
+        <div class="bg-slate-900/70 border border-slate-800 p-4 rounded-2xl">
+          <div class="flex items-center justify-between text-xs text-red-400 font-semibold">
+            <span>🇨🇳 国内冷兵器 (春秋/三国)</span>
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div class="mt-2 text-xl font-bold text-slate-100">Day 1 – 30 争霸</div>
+          <div class="text-xs text-slate-400 mt-1">法家变法均田、车战转骑弩、水利粮道长协、离间计与诸侯霸主会盟</div>
+        </div>
+
+        <div class="bg-slate-900/70 border border-slate-800 p-4 rounded-2xl">
+          <div class="flex items-center justify-between text-xs text-blue-400 font-semibold">
+            <span>🌍 国外冷兵器 (罗马/中世纪)</span>
+            <i class="fa-solid fa-chess-rook"></i>
+          </div>
+          <div class="mt-2 text-xl font-bold text-slate-100">Day 1 – 30 霸业</div>
+          <div class="text-xs text-slate-400 mt-1">80%纯重骑冲击、地中海运粮、分封采邑群规避CE、掳掠战俘充矿山奴隶</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <h3 class="text-sm font-bold text-amber-300 font-serif flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie text-amber-400"></i> 玩家 vs AI 博弈能力六维对比
+          </h3>
+          <div class="relative h-[280px]">
+            <canvas id="radarChart"></canvas>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <h3 class="text-sm font-bold text-amber-300 font-serif flex items-center gap-2">
+            <i class="fa-solid fa-chart-area text-cyan-400"></i> 前 30 天/回合 五大行为领域演变
+          </h3>
+          <div class="relative h-[280px]">
+            <canvas id="areaChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CIV 6 FULL TABLE -->
+    <div id="view-civ" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
+              <i class="fa-solid fa-monument text-amber-400"></i> 《文明 VI / V》前 30 回合逐回合微操与独立收益全景表
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">从创世选址、踩村抢使节、控蛮族视野、发万神殿到二城落地与反突袭防御。</p>
+          </div>
+          <span class="bg-amber-950/60 text-amber-400 border border-amber-800/40 text-xs px-3 py-1 rounded-full font-mono">Turn 1 to 30 Full Matrix</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll max-h-[700px]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="sticky top-0 bg-slate-950 z-10">
+              <tr class="border-b border-slate-800 text-slate-300 font-semibold">
+                <th class="py-3 px-3 w-16 text-center">回合</th>
+                <th class="py-3 px-4 w-72 text-emerald-400">🎮 人类高玩极限微操动作</th>
+                <th class="py-3 px-4 w-60 text-rose-400">🤖 神级 AI 实际动作</th>
+                <th class="py-3 px-4 text-amber-300">🌟 独立操作收益与底层数值机制解析 (ROI & Mechanics)</th>
+              </tr>
+            </thead>
+            <tbody id="civ-table-body" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: EU4 VANILLA FULL TABLE -->
+    <div id="view-eu4" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-lg font-bold text-cyan-300 font-serif flex items-center gap-2">
+              <i class="fa-solid fa-crown text-cyan-400"></i> 《欧陆风云4 原版》开局前 30 天逐日极限破局与收益全景表
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">1444.11.11 Day 1 暂停至 1444.12.11 宣战解禁日，阶层微操、外交拉盟与佣兵机制收益。</p>
+          </div>
+          <span class="bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 text-xs px-3 py-1 rounded-full font-mono">1444.11.11 - 1444.12.11 (31 Days)</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll max-h-[700px]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="sticky top-0 bg-slate-950 z-10">
+              <tr class="border-b border-slate-800 text-slate-300 font-semibold">
+                <th class="py-3 px-3 w-16 text-center">天数</th>
+                <th class="py-3 px-4 w-72 text-emerald-400">🎮 人类高玩极限微操动作</th>
+                <th class="py-3 px-4 w-60 text-rose-400">🤖 引擎 AI 实际动作</th>
+                <th class="py-3 px-4 text-cyan-300">🌟 独立操作收益与底层数值机制解析 (ROI & Mechanics)</th>
+              </tr>
+            </thead>
+            <tbody id="eu4-table-body" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: HOI2 FULL TABLE -->
+    <div id="view-hoi2" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-lg font-bold text-rose-300 font-serif flex items-center gap-2">
+              <i class="fa-solid fa-industry text-rose-400"></i> 《钢铁雄心2 / 决战》1936年开局前 30 天逐日备战与收益全景表
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">1936.1.1 至 1936.1.30，政治滑条调整、消费品消不满、科研专精匹配与长效贸易锁定的每日推演。</p>
+          </div>
+          <span class="bg-rose-950/60 text-rose-400 border border-rose-800/40 text-xs px-3 py-1 rounded-full font-mono">1936.1.1 - 1936.1.30 (30 Days)</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll max-h-[700px]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="sticky top-0 bg-slate-950 z-10">
+              <tr class="border-b border-slate-800 text-slate-300 font-semibold">
+                <th class="py-3 px-3 w-16 text-center">天数</th>
+                <th class="py-3 px-4 w-72 text-emerald-400">🎮 人类高玩极限微操动作</th>
+                <th class="py-3 px-4 w-60 text-rose-400">🤖 脚本 AI 实际动作</th>
+                <th class="py-3 px-4 text-rose-300">🌟 独立操作收益与底层数值机制解析 (ROI & Mechanics)</th>
+              </tr>
+            </thead>
+            <tbody id="hoi2-table-body" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: CHINA COLD WEAPON MOD FULL TABLE -->
+    <div id="view-chinacold" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-lg font-bold text-red-300 font-serif flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-red-400"></i> 🇨🇳【国内冷兵器 MOD】春秋战国与三国群雄争霸前 30 天/回收益全景表
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">基于《春秋战国》《汉风华夏》《三国演义》MOD：百家争鸣选法家、初税亩军功均田、车战改骑弩、离间计、断水绝粮破都邑与霸主会盟。</p>
+          </div>
+          <span class="bg-red-950/60 text-red-400 border border-red-800/40 text-xs px-3 py-1 rounded-full font-mono">China Era: BC 770 / AD 184</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll max-h-[700px]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="sticky top-0 bg-slate-950 z-10">
+              <tr class="border-b border-slate-800 text-slate-300 font-semibold">
+                <th class="py-3 px-3 w-16 text-center">天/回</th>
+                <th class="py-3 px-4 w-72 text-emerald-400">🎮 人类高玩华夏争霸微操</th>
+                <th class="py-3 px-4 w-60 text-rose-400">🤖 诸侯 AI 实际动作</th>
+                <th class="py-3 px-4 text-red-300">🌟 独立操作收益与底层数值机制解析 (ROI & Mechanics)</th>
+              </tr>
+            </thead>
+            <tbody id="china-table-body" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: FOREIGN COLD WEAPON MOD FULL TABLE -->
+    <div id="view-foreigncold" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-lg font-bold text-blue-300 font-serif flex items-center gap-2">
+              <i class="fa-solid fa-chess-rook text-blue-400"></i> 🌍【国外冷兵器 MOD】古典罗马与中世纪封建采邑前 30 天/回收益全景表
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">基于《Imperium Universalis》《MEIOU & Taxes 3.0》MOD：80%纯重骑冲击、地中海运粮长协、通讯效率(CE)分封采邑群、掳掠战俘充银矿奴隶与冬歇撤军。</p>
+          </div>
+          <span class="bg-blue-950/60 text-blue-400 border border-blue-800/40 text-xs px-3 py-1 rounded-full font-mono">Foreign Era: BC 559 / AD 1356</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll max-h-[700px]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="sticky top-0 bg-slate-950 z-10">
+              <tr class="border-b border-slate-800 text-slate-300 font-semibold">
+                <th class="py-3 px-3 w-16 text-center">天/回</th>
+                <th class="py-3 px-4 w-72 text-emerald-400">🎮 人类高玩地中海/中世纪微操</th>
+                <th class="py-3 px-4 w-60 text-rose-400">🤖 封建/蛮族 AI 实际动作</th>
+                <th class="py-3 px-4 text-blue-300">🌟 独立操作收益与底层数值机制解析 (ROI & Mechanics)</th>
+              </tr>
+            </thead>
+            <tbody id="foreign-table-body" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: MACRO MATRIX -->
+    <div id="view-macro" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
+          <i class="fa-solid fa-table-columns text-amber-400"></i> 全时代五大行为宏观概率矩阵全景表
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-950 text-slate-300 font-semibold">
+                <th class="py-3.5 px-4">游戏 / MOD</th>
+                <th class="py-3.5 px-4">时代背景</th>
+                <th class="py-3.5 px-4 text-amber-400">🔍 探索情报</th>
+                <th class="py-3.5 px-4 text-emerald-400">🏗️ 内政经济</th>
+                <th class="py-3.5 px-4 text-rose-400">⚔️ 军事征服</th>
+                <th class="py-3.5 px-4 text-cyan-400">🔬 科技市政</th>
+                <th class="py-3.5 px-4 text-purple-400">🤝 外交地缘</th>
+                <th class="py-3.5 px-4">核心博弈机制</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 text-slate-300 font-mono">
+              <tr class="hover:bg-slate-900/60">
+                <td class="py-3 px-4 font-bold text-amber-300 font-sans">文明 VI (玩家)</td>
+                <td class="py-3 px-4 font-sans text-slate-400">远古时代 (BC 4000)</td>
+                <td class="py-3 px-4 text-amber-400 font-bold">45%</td>
+                <td class="py-3 px-4 text-emerald-400">30%</td>
+                <td class="py-3 px-4 text-rose-400">15%</td>
+                <td class="py-3 px-4 text-cyan-400">5%</td>
+                <td class="py-3 px-4 text-purple-400">5%</td>
+                <td class="py-3 px-4 font-sans text-slate-400">平原丘陵2粮2锤复利、抢首发使节、防蛮族回营</td>
+              </tr>
+              <tr class="hover:bg-slate-900/60">
+                <td class="py-3 px-4 font-bold text-cyan-300 font-sans">EU4 原版 (玩家)</td>
+                <td class="py-3 px-4 font-sans text-slate-400">文艺复兴 (1444)</td>
+                <td class="py-3 px-4 text-amber-400">5%</td>
+                <td class="py-3 px-4 text-emerald-400 font-bold">40%</td>
+                <td class="py-3 px-4 text-rose-400 font-bold">35%</td>
+                <td class="py-3 px-4 text-cyan-400">5%</td>
+                <td class="py-3 px-4 text-purple-400 font-bold">15%</td>
+                <td class="py-3 px-4 font-sans text-slate-400">三大阶层特权榨点、自由佣兵团早战、100%和约控AE</td>
+              </tr>
+              <tr class="hover:bg-slate-900/60">
+                <td class="py-3 px-4 font-bold text-rose-300 font-sans">HoI2 (玩家)</td>
+                <td class="py-3 px-4 font-sans text-slate-400">二战前夕 (1936)</td>
+                <td class="py-3 px-4 text-amber-400">0%</td>
+                <td class="py-3 px-4 text-emerald-400 font-bold">70%</td>
+                <td class="py-3 px-4 text-rose-400">5%</td>
+                <td class="py-3 px-4 text-cyan-400 font-bold">20%</td>
+                <td class="py-3 px-4 text-purple-400">5%</td>
+                <td class="py-3 px-4 font-sans text-slate-400">推计划经济滑条、消费品消不满、连续造工厂(IC Whore)</td>
+              </tr>
+              <tr class="hover:bg-slate-900/60">
+                <td class="py-3 px-4 font-bold text-red-400 font-sans">🇨🇳 国内冷兵器 MOD</td>
+                <td class="py-3 px-4 font-sans text-slate-400">春秋战国/三国 (BC770/AD184)</td>
+                <td class="py-3 px-4 text-amber-400">5%</td>
+                <td class="py-3 px-4 text-emerald-400 font-bold">45%</td>
+                <td class="py-3 px-4 text-rose-400 font-bold">30%</td>
+                <td class="py-3 px-4 text-cyan-400">5%</td>
+                <td class="py-3 px-4 text-purple-400 font-bold">15%</td>
+                <td class="py-3 px-4 font-sans text-slate-400">法家变法、军功均田、水利运粮、离间计与霸主会盟</td>
+              </tr>
+              <tr class="hover:bg-slate-900/60">
+                <td class="py-3 px-4 font-bold text-blue-400 font-sans">🌍 国外冷兵器 MOD</td>
+                <td class="py-3 px-4 font-sans text-slate-400">古典罗马/中世纪 (BC559/1356)</td>
+                <td class="py-3 px-4 text-amber-400">5%</td>
+                <td class="py-3 px-4 text-emerald-400 font-bold">40%</td>
+                <td class="py-3 px-4 text-rose-400 font-bold">35%</td>
+                <td class="py-3 px-4 text-cyan-400">5%</td>
+                <td class="py-3 px-4 text-purple-400 font-bold">15%</td>
+                <td class="py-3 px-4 font-sans text-slate-400">80%纯重骑冲击、地中海运粮、分封采邑群、掠奴入矿</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const CIV_DATA = [[1, "坐城平原丘陵 (白嫖2粮2锤)，市民手动锁最高产出地块；首发侦察兵/投石兵；首发科技点《采矿》或《畜牧》。", "初始自带3移民5勇士2弓手，原地秒拍首都与2个分城，全图盲目散布勇士。", "【基础产能翻倍】坐平原丘陵白嫖 2粮2锤（对比2粮1锤相当于开局净增 100% 锤子），首个侦察兵耗时从 8 回合压缩至 5 回合，省去 1 人口劳作需求。"], [2, "勇士沿顺时针探查首都第一圈（环形6格地块），排查 3 格内蛮族营地。", "分城开始自发建造勇士或纪念碑，部队漫无目的地在地图边缘巡逻。", "【视野控制与防蛮】探明 3 格内是否有蛮族营地，确保首发侦察兵出门时不会被蛮族抄家；勘探二城潜在水源地。"], [3, "市民微操切至高粮地块（如3粮热带雨林/泛滥平原），加速人口增长。", "自动托管市民分配，导致地块产出配比严重失衡。", "【人口基数快速爬坡】优先将首都人口从 1 提至 2，使城市基础科研/文化产出与市民地块工作格瞬间翻倍。"], [4, "勇士探明第一个战略/奢侈资源（如马/石头/玉石），决定后续科技走向。", "随机研发科技分支，不考虑周边地块资源契合度。", "【科技路线精准对齐】提前确定《畜牧业》（看马）或《采矿业》（砍树/挖矿），避免无意义的科技瓶浪费。"], [5, "首都第 1 位侦察兵完工！秒转生产投石兵（4回合）；侦察兵走直线向外环探索。", "继续均摊建造低效单位，缺乏探路规划。", "【开图效率质变】侦察兵具备 3 点移动力，每回合可探索 2~3 个新地块，开启抢城邦与踩村庄竞速。"], [6, "侦察兵踩中首个村庄（Goody Hut），吃尤里卡或金币奖励。", "盲目巡逻常漏掉迷雾中的部落村庄。", "【白嫖早期关键滚雪球】期望收益为 +20~40 现金或免费解锁 1 个远古尤里卡（价值 25~40 科技/文化瓶）。"], [7, "接触全图第 1 个城邦，抢下首发使节（First Meet Envoy）。", "偶遇城邦但未能吃到首发加成。", "【永久首发收益】若为宗教城邦直接 +1 信仰/回（锁定万神殿门槛）；若为科技/文化城邦，首回合产出直接 +1 点/回。"], [8, "首都人口升至 2！市民锁定至 1 高粮 + 1 高锤地块，投石兵建造加速。", "人口自然增长但缺乏生产力聚焦。", "【产出最优均衡解】兼顾人口向 3 增长与单位生产速度，投石兵压缩至 2 回合后出炉。"], [9, "发现蛮族斥候！勇士与侦察兵交叉走位，死卡其返回蛮族营地的路径。", "大军被蛮族营地牵制，经常陷入拉锯消耗战。", "【扼杀蛮族暴动潮】蛮族斥候头顶感叹号一旦返回营地会立即触发刷兵潮；卡死其视野可彻底免除首都早期被围威胁。"], [10, "科技《畜牧业》研发完成，全图点亮马匹资源；投石兵进驻防守隘口。", "科技多头并进，无法精准定位战略资源。", "【解锁关键战略视野】掌握战马位置，直接决定二城选址优先级，并开启骑兵战术前置。"], [11, "投石兵击杀 1 名蛮族残血单位，瞬间触发《弓箭术》尤里卡！", "硬用勇士肉搏击杀，未能吃到尤里卡加成。", "【减免 50% 科技瓶】直接省去 25 点科研点数，使远古核心防守兵种《弓箭手》研究时间减半。"], [12, "首次接触邻国 AI！在同一回合内立刻赠送 25 金币代表团（Delegation）。", "机械评估玩家，好感度处于中立偏负，未发代表团。", "【锁死早期和平外交】开局首回合送代表团必接（+3 好感），防止 AI 在远古时代直接触发突袭战争（Surprise War）。"], [13, "侦察兵探明二城战略候选点（淡水河流 + 2 种奢侈品 + 山脉隘口）。", "随地就近拍城，导致城市被山脉封死或缺水缺粮。", "【奠定帝国扩张轴心】精准锁定高产出与高防守价值地块，为第一位开拓者规划护航路线。"], [14, "首都开锤第一位建造者（Builder）或第二位投石兵；准备改良 3 处地块。", "盲目建造纪念碑，地块长期处于未改良原始状态。", "【市政尤里卡前置】准备完成 3 次地块改良以触发《技艺》尤里卡，提速市政树。"], [15, "市政《法典》完成！挂上《城市规划》（全城+1生产力）与《纪律》（对蛮+5战力）。", "随机插卡，未能最大化生产力增益。", "【全国产能提升 25%】《城市规划》为所有城市无条件提供 +1 锤，使后续造移民效率大幅飙升。"], [16, "累计信仰值达 25 点，建立万神殿！首选《宗教移民》或《苍天神》。 ", "万神殿随机乱选，未能与地块产出形成协同。", "【白嫖 1 名开拓者】若抢到《宗教移民》直接白送 1 移民（净省 80 锤/10 回合），瞬间追平神级 AI 差距。"], [17, "将手头改良获得的奢侈品挂单，向友好 AI 询价。", "囤积奢侈品，未转化为流动资金。", "【流动资金套利】将多余奢侈品以 8~10 金/回的高价卖给 AI，换取源源不断的现金流。"], [18, "首都人口达 3！正式开启第一位开拓者（移民）自产建造（配合+1锤需6回合）。", "分城数量虽多但地块未改良，产出低下。", "【启动人口向版图转化】在不损伤首都核心工业能力的前提下，按节奏输出扩张单位。"], [19, "建造者完成农场/牧场/矿山 3 处改良，瞬间触发《技艺》与《轮轴》尤里卡！", "地块无改良，城市宜居度与产出停滞。", "【双重尤里卡爆发】提速市政直通《国家劳动力》，首都宜居度提升，全城产出再获 10% 增益。"], [20, "将第 2 份奢侈品高价换取 60 单次现金 + 每回合回款，国库集齐 120 金币。", "充当玩家提款机，大量现金被玩家吸干。", "【金币直接变现战力】利用金币储备随时在关键前线直接购买投石兵或升级单位，无需等待建造回合。"], [21, "在首都现款购买 1 位投石兵，实现即时部署防线。", "排队建造单位，前线兵力补充缓慢滞后。", "【零延迟军备强化】瞬间提升军事威慑值，压制周边 AI 的宣战渴望判定（War Desirability）。"], [22, "侦察兵发现第 2 家城邦并完成探路任务，时代得分达到 12 点安全区。", "部队迷失在外圈迷雾中，未能建立有效视野网。", "【锁定古典黄金时代】提前积累时代得分，确保进入古典时代后获得《雄伟壮丽》（可用信仰买移民工人）。"], [23, "科技《弓箭术》研发完毕！花费 60 金将 2 名投石兵就地升级为古典弓箭手。", "仍维持低阶勇士与投石兵编制。", "【战斗力质变跃升】弓箭手远程战力达 25 点（投石兵仅15点），2 名弓箭手卡住山地可抵御 6 队勇士冲锋。"], [24, "第一位开拓者出炉！勇士与弓箭手形成护航编队，沿预定安全路线出发。", "移民裸奔前往远方，极易被蛮族或玩家截获俘虏。", "【绝对安全护航】彻底规避移民被蛮族骑兵偷袭劫掠的灭顶风险。"], [25, "二城正式坐下！全国城市数增至 2 座，回合科研与文化基数跃升 80%。", "虽然城多但忠诚度暴跌，陷入叛乱边缘。", "【第二工业核心运转】二城立刻拥有 1 环改良资源，开锤纪念碑或水磨提速发展。"], [26, "邻近好战 AI 派 4 勇士试图压境，见玩家前线部署了 2 名高地弓手转为撤退。", "因判定进攻伤亡过大，AI 突袭判定被硬生生打断。", "【零伤亡战略威慑】利用兵种代差与地形优势，不费一兵一卒瓦解 AI 的远古早战企图。"], [27, "与邻居 AI 好感度转为绿脸，第一时间点击“宣布友谊”（Declare Friendship）！", "失去对玩家发动突袭战争的合法机制借口。", "【强制锁定 30 回合和平】游戏机制硬编码宣布友谊期间绝对不可宣战，彻底解除后顾之忧。"], [28, "二城地块边界自然扩张至铁矿/马匹单元格；首都规划首个高加成区域（学院+3）。", "区域无邻接规划，随地乱放只有 +0/+1 加成。", "【高邻接区域收益】+3 学院配合后续翻倍卡可提供 +6 科技瓶/回，奠定中世纪科技领先基础。"], [29, "市政《早期帝国》完成！挂上《殖民》（开拓者+50%生产力），首都开启二连拍移民。", "市政卡槽更替混乱，未能享受 50% 移民建造加成。", "【产能爆发式释放】第二位与第三位开拓者仅需 3~4 回合即可出炉，开启几何级裂变扩张。"], [30, "前 30 回合完美收官：2 城运转、3 弓 1 勇 1 斥候军备、万神殿就绪、时代得分稳进黄金时代。", "远古突袭失败，经济被高额军费拖垮，陷入发展停滞。", "【全面确立胜势】在无任何作弊补偿下，凭借极限微操在经济、科技、军事和地缘上全方位超越神级 AI。"]];
+    const EU4_DATA = [[1, "1444.11.11 Day 1 极限暂停！发放三大阶层 +1/+1/+1 君主点数特权与商品垄断特权；召集议会；雇 3 位 1 级顾问；陆军军费拉至最低；关闭所有非前线要塞；设三大宿敌；派 2 名外交官分别拉大国盟友与造宣称。", "机械遍历同等体量邻国互发结盟请求；全开要塞导致财政负增长；不主动发放阶层点数特权。", "【全游戏最核心复利源】三大阶层特权每年净提供 36 点君主点数（30年累计 1080 点，等同白嫖 2.5 个完整理念组）；关闭要塞每月省 0.5 杜卡特/座，降军费每月省 70% 陆军开销；垄断特权立提 150 杜卡特现金。"], [2, "1444.11.12 商人团抵达贸易节点重设引流（Steering）；舰队合并编队移出港口。", "舰队分散在内港，未执行保护贸易任务。", "【贸易力量刷新】重新规划贸易节点流向，避免贸易额被竞争对手截流就地提取。"], [3, "1444.11.13 贸易舰队抵达主贸易海域执行保护贸易，首都节点贸易力量提升 15%。", "维持基础贸易力量，月收入无动态增益。", "【月现金流提升】直接推高下月预期贸易收入 0.4~0.8 杜卡特/月，抵消顾问维护费。"], [4, "1444.11.14 测算陆军行军步数（18~22天），向边境集结省份下达集结行军指令。", "陆军分散驻扎在各个内陆省份，补给消耗不均。", "【精准卡死 12.11 宣战窗口】确保主力军团在 12 月 10 日前恰好踏入边境最前沿，节省在边境消耗的损耗日。"], [5, "1444.11.15 外交官 1 抵达目标大国（如奥地利/法兰西），建立外交关系好感 +25。", "与周边无关小国签署军事通行权，白白占用外交关系槽。", "【跨级同盟倒计时】开启改善关系（每日+0.14），确保在 2~3 个月内突破 +100 结盟阈值。"], [6, "1444.11.16 外交官 2 在破局目标国建立间谍网（每日递增 +0.15 间谍点数）。", "未针对性建立间谍网，被动等待事件宣称。", "【伪造宣称前置】为 12.11 宣战或附庸化提供合法战争借口，降低核心化成本 10% 并减少 10% 宣战 AE。"], [7, "1444.11.17 查阅全欧君王家族树，排查高龄无嗣君主（如米兰、勃艮第、波希米亚）。", "静态等待联姻事件，无地缘联统敏感度。", "【75/20/5 同君联合套利】若发现君王 >60 岁无后，提前预留外交关系槽准备联姻抢王位。"], [8, "1444.11.18 陆军在行军途中穿过平原省份，维持低维护费状态。", "开战前维持高维护费，财政赤字扩大。", "【战前成本极度压缩】在行军前 20 天内无需满士气，利用低军费省下 15~20 杜卡特战备资金。"], [9, "1444.11.19 监测周边潜在宿敌的结盟动态，排查其防守同盟漏洞。", "机械响应其他 AI 的防御同盟协议。", "【寻找孤立破局切口】若目标国尚未拉到盟友，锁定其为 12.11 首日闪击猎物。"], [10, "1444.11.20 陆军抵达第一集结省份，部队合并为标准交战宽度（Combat Width）满编。", "多支 2-3k 小部队散落，缺乏主战军团协同。", "【战力集中原则】防止战端一开被敌方利用内线优势分进合击抓单。"], [11, "1444.11.21 间谍网积累达 5 点；外交官 1 与大国签署王室联姻（Royal Marriage）。", "随机与神罗小主教国联姻，浪费外交声誉。", "【外交声誉与好感跃升】王室联姻提供 +25 好感与 +1 正统度，同盟接受度得分瞬间增加 +10。"], [12, "1444.11.22 向市民阶层借入 1% 极低利息贷款（Burgher Loans，共5笔）。", "极度厌恶借贷，国库耗尽后借 4% 银行高息贷款。", "【战时资本杠杆】以几乎为 0 的利息（1% vs 正常4%）获取 300~500 杜卡特现款，用于战时雇佣军。"], [13, "1444.11.23 将陆战将领指派给主力军团，筛选高冲击（Shock）或高攻城（Siege）将领。", "将领随机指派或由君王担任将领导致君王暴毙风险。", "【冲击阶段伤害最大化】开局科技 3 阶段陆战由冲击支配，高冲击将领可在首轮 3 天内歼敌 30% 以上。"], [14, "1444.11.24 检查国家核心化与自治度面板，对低叛乱省份手动降低自治度（Lower Autonomy）。", "放任自治度自然衰减，全国产出折损 25%。", "【极限压榨省份产出】降低 25% 自治度换取 +10 叛乱，但瞬间提升该省 33% 的税收、人力与生产产出。"], [15, "1444.11.25 间谍网积累达 10 点；外交官 2 持续渗透。", "间谍被目标国反间谍发现几率极低，AI 毫无防备。", "【稳步推进 CB 伪造】距离宣战解禁仅剩 16 天，宣称进度完全受控。"], [16, "1444.11.26 主力军团进入距边境仅 1 格的要冲省份，卡住山地要塞补给线。", "行军路线跨越河流与山脉，白受地形移动惩罚。", "【战术地形预先占位】确保开战后能够抢先占领平原，或诱敌进攻我方山地防守要塞。"], [17, "1444.11.27 评估人力池月恢复速度，决定首战是否全用雇佣兵扛攻城损耗。", "全用本土人力攻城，人力在半年内打空。", "【人力池保护机制】要塞围攻每月固定损失 1%~5% 兵力，雇佣兵损耗不扣国家人力池，保住兵役基本盘。"], [18, "1444.11.28 外交官 1 与大国正式签署《军事同盟条约》（Alliance）！", "与弱小邻国结盟，无法在大战中提供有效支援。", "【确立地缘保护伞】彻底打消周边宿敌的宣战念头，并可借大国威慑在后续和约中索要更多利益。"], [19, "1444.11.29 检查教皇影响力（Papal Influence）投资，将点数投向教廷控制权抽签。", "教皇点数溢出闲置，未参与教廷竞选。", "【争夺教廷控制权】提前布局教廷控制者，若当选可获得 -20% AE、+1 外交官与破门绝罚特权。"], [20, "1444.11.30 首月月度结算前夜！检查所有贸易流向与财政收支表。", "财政处于盲盒状态，赤字持续累积。", "【锁定月度正向结算】确保明日 12 月 1 日脉冲顺利结转，无任何未分配的空耗资金。"], [21, "1444.12.01 12月1日月度结算脉冲！收缴本月税收与垄断现金；顾问点数全额入账 (+1/+1/+1)。", "按默认规则接收税收，阶层忠诚度未被激活。", "【第一笔点数红利到账】三大类型君主点数各增 10~12 点；财政录得正收益；阶层忠诚度开始向中立平衡点回归。"], [22, "1444.12.02 在主力集结地招募自由佣兵团（Free Company，4~6k）。", "在后方缓慢招募常规步兵，耗时 60 天。", "【即时战力交付】自由佣兵团招募仅需 4 天且自带满士气与满编兵力，成本远低于常规佣兵。"], [23, "1444.12.03 自由佣兵团完成组建！与主力部队完成会合编制。", "仍在漫长招兵排队中，部队集结脱节。", "【前线兵力形成绝对优势】在开战前 8 天兵力已达编制上限 120%，形成对敌 2:1 兵力碾压。"], [24, "1444.12.04 间谍网突破 20 点！外交官 2 正式伪造核心省份宣称（Fabricate Claim）。", "无宣称状态，无法发动征服战争。", "【获得合法 CB】获得征服宣称（Conquest CB），割让该省份省点数消耗降低 10%，割地 AE 降低 10%。"], [25, "1444.12.05 外交官 2 撤回，派往第二潜在威胁国执行改善关系（提前消化即将产生的 AE）。", "外交官闲置在首都，未进行预防性外交。", "【防包围网前置操作】在开战前拉高周边国家好感至 +50 以上，确保战后 AE 暴涨也不会跌破 0 好感触发包围网。"], [26, "1444.12.06 运输舰队与主力战舰在敌方沿海港口外海域巡弋，准备封锁海峡/港口。", "海军停泊在内港，未进行海上封锁准备。", "【海战交战宽度压制】开战第一天即封锁敌方海港，提供 +1 围城点数加成并彻底封死敌军渡海路线。"], [27, "1444.12.07 检查全军补给上限（Supply Limit），将大军拆分为 2 个相邻省份驻扎防损耗。", "40k 大军挤在 15k 补给上限省份，每天死伤数百人。", "【零非战斗损耗集结】在开战前夜保持部队 100% 满编健康状态。"], [28, "1444.12.08 设定战争税（War Taxes），若军事点充裕可在开战后免维护费。", "无战争税规划，战时军费激增拖垮财政。", "【战时财政护航】降低陆军维护费基数，确保长达 2~3 年的围城战不会导致国家破产。"], [29, "1444.12.09 战前最后 48 小时！确认敌军所有同盟均无法参战（处于被动拒绝或负好感）。", "盲目宣战导致敌方拉入多国大同盟陷入苦战。", "【孤立目标战术】确保交战为 1v1 或我方多打一，避免战争范围不可控扩大。"], [30, "1444.12.10 停战保护期最后一天！将陆军军费拉至 100% 满额，士气池准备恢复。", "在开战首日才拉军费，部队士气为 0 极易被一触即溃。", "【士气恢复前置】确保明日开战时士气已处于健康上升通道，自由佣兵团士气直接为满值。"], [31, "1444.12.11 1444.12.11 宣战解禁日！发动破局宣战！全军利用 0 距离在 Day 32 第一时间冲入敌境秒占无防备省份！", "才开始缓慢调兵，被动应对国际局势。", "【破局战役全面打响】在敌方要塞守军为 0 时直接攻陷外围省份，以极低代价开启百年扩张霸业。"]];
+    const HOI2_DATA = [[1, "1936.1.1 黄金调控日！极限暂停！政体滑条向《鹰派》（降低生产时间与成本 10%）或《全计划经济》（IC +15%）推动 1 格；将消费品预算拉满至 45 IC（每日消不满 0.08%）；指派 IG Farben 研《基础机床》、Krupp 研《基础工业》；解散 6 个一战老旧师省补给。", "随机微调滑条；放任 5% 不满度损耗产能；维持全额部队维护费；科研随意指派非专精团队。", "【工业复利终极起点】计划经济滑条直接提升 15% 基础 IC 产出；消不满使未来 30 个月内免受 5%~10% 的全国工业与战斗力惩罚；解散老旧师每日净省 80 点补给物资（回笼 1.5 IC）。"], [2, "1936.1.2 开启国际长效贸易：向美国/苏联发起以富余煤炭/钢铁交换稀缺橡胶与原油的长协长单（锁定 1:0.8 汇率）。", "资源短缺时才临时用高溢价散单补救，汇率处于 1:0.3 劣势。", "【锁死战时战略储备】趁和平年代国际贸易通畅，将未来 3 年的合成橡胶与石油原料成本锁定在历史最低位。"], [3, "1936.1.3 不满度（Dissent）自 5.0% 降至 4.92%；消费品供给平稳运行。", "不满度维持在 5.0%，每日折损有效工业点数（Available IC）。", "【社会动员效率回升】有效 IC 每天恢复 0.3 点，工业产能持续解冻。"], [4, "1936.1.4 重新梳理全军战斗序列（OOB），将所有主力装甲师合并至柏林与汉诺威组建装甲军团。", "部队散落在全国边境各个小省份，编制混乱。", "【战役突击矛头成型】3 师纯装甲编制享有兵种协同优势，避免与步兵混编拖慢机械化行军速度。"], [5, "1936.1.5 将高等级特种将领（如古德里安、曼施坦因、隆美尔）指派到装甲与摩托化集团军军长位置。", "高级将领被闲置在军官库，或将装甲名将指派给后方卫戍部队。", "【将领技能经验最大化】名将自带《装甲领袖》（Panzer Leader）与《进攻大师》（Offensive Doctrine），部队攻防战力直接 +15%。"], [6, "1936.1.6 不满度降至 4.68%；检查全国电力与煤炭消耗比率。", "因缺乏长协贸易，个别军工厂出现停工待料。", "【工业能源平衡】确保每 1 点 IC 消耗 2 能源 + 1 金属 + 0.5 稀有金属的链条 100% 满负荷运转。"], [7, "1936.1.7 科技《基础机床》（Basic Machine Tools）研发进度达 8%，研发槽运转正常。", "科研所与科技子领域不匹配，研发速度折损 30%。", "【工业机床科技领先】机床完成后全帝国工厂产出 +5%，是二战总体战的核心技术基石。"], [8, "1936.1.8 检查运输船队（Convoys）与护航舰编队，撤回高风险海外殖民地补给线。", "保留无意义的海外孤岛补给线，浪费昂贵的运输船队。", "【精简远洋辎重】将多余护航舰回拢至本土主力舰队，节省每日补给燃油损耗。"], [9, "1936.1.9 不满度降至 4.44%；海军主力战列舰与潜艇部队集中进驻威廉港整修。", "舰队在北海巡逻，每天烧毁数百吨宝贵原油。", "【战备燃油封存】和平时期舰队入港维护只需极低补给，省下的重油全部用于战时战略储备。"], [10, "1936.1.10 陆军学说（Land Doctrine）科技槽指派曼施坦因团队研发《大兵团战术》（Grand Battleplan / Blitzkrieg）。", "研发过早年份的后继学说，承受 50% 历史年份时间惩罚。", "【闪击战学说铺垫】为 1939 年装甲师突破组织度（Organization）跃升至 70+ 打下战术理论框架。"], [11, "1936.1.11 不满度降至 4.28%！释放出来的 3 点 IC 投入基础设施扩建。", "不满度仍然高达 4.8%，产能持续浪费。", "【基建提升吞吐量】基建 100% 的省份建造工厂速度快 10%，部队移动速度快 20%。"], [12, "1936.1.12 与瑞典签署《高品位铁矿石专项进口协议》，锁定波罗的海航线安全。", "被动接受瑞典的随行就市报价，铁矿供给波动大。", "【确保核心工业命脉】以极低成本稳固鲁尔工业区的优质铁矿石供应。"], [13, "1936.1.13 不满度降至 4.12%；空军拦截机与轰炸机联队完成基地集结与战备定级。", "空军飞机分散在各个前线机场，地勤维护严重超标。", "【空军集群高效驻扎】集中在 10 级大机场可获得最高的地勤维修速度与组织度恢复。"], [14, "1936.1.14 工业科技《农业改良》（Agricultural Production）研发进度突破 15%。", "忽视农业科技，导致后续大战人力池（Manpower）枯竭。", "【人力池月恢复率跃升】农业科技直接提升全国月度人力增长 5%，为扩充百万野战大军备足兵源。"], [15, "1936.1.15 不满度跌破 4.0% 关口，降至 3.96%！有效可用 IC 突破 90 点。", "有效 IC 停滞在 80 点左右，无法支撑大型基建项目。", "【工业生产力加速解冻】社会各界逐步恢复对政权信任，罢工与消极怠工惩罚消除一半。"], [16, "1936.1.16 评估防谍与情报网络，在柏林投入 5 点间谍资金肃清外国间谍渗透。", "间谍资金为 0，技术蓝图常被敌国间谍窃取盗用。", "【保护核心科技专利】防止英美苏间谍偷走《基础机床》与《装甲车辆》研发蓝图。"], [17, "1936.1.17 不满度降至 3.80%；第二轮国际贸易配额执行顺利，橡胶储备突破 5000 吨。", "战略橡胶存量跌破安全线，随时面临断供停产。", "【战备物资安全垫】即使开战后同盟国封锁大西洋，储备的原油与橡胶仍可支撑 2 年满负荷生产。"], [18, "1936.1.18 检查后方防空火炮（AA Gun）与雷达站（Radar）布局规划。", "随地乱建雷达站，浪费宝贵 IC。", "【防空要塞网络规划】锁定鲁尔区关键工业城市，为应对盟军战略轰炸预留防护升级槽位。"], [19, "1936.1.19 不满度降至 3.64%；科研团队《基础步兵师 1936》（Basic Infantry 36）进入中期冲刺。", "依然在使用 1918 年一战老式步枪编制。", "【部队代差优势】1936 年型步兵软攻（Soft Attack）与防御力较一战步兵提升 40%。"], [20, "1936.1.20 步入 1 月下旬！重新核算消费品投产比，微调预算确保在 2 月中旬不满度清零。", "未动态调整预算，导致消不满进程拖延数月。", "【精准算力微调】避免消费品投放过多造成产能浪费，保持每日 0.08% 匀速递减。"], [21, "1936.1.21 不满度降至 3.48%；向保加利亚/匈牙利派出外交使团，拉高双边好感度至 +100。", "外交孤立，在巴尔干地区缺乏战略支点。", "【轴心国地缘轴心构建】提前培育巴尔干盟友，确保战时获得充足的仆从国军队与粮食补给。"], [22, "1936.1.22 测算第一批连续工厂建造序列（Factory Series）所需 IC 与省份分配表。", "无连造规划，工厂单批次建造导致生产效率惩罚。", "【连造齿轮效应（Gearing Bonus）】连续造工厂每批次可享受工期递减与熟练度加成，性价比提升 20%。"], [23, "1936.1.23 不满度降至 3.32%；空军研制单位开始论证《近距离空中支援 CAS》（Stuka 俯冲轰炸机）。", "研制昂贵且低效的战略轰炸机，脱离陆空协同体系。", "【陆空一体闪击战刃】CAS 是二战最廉价且摧毁敌方组织度最高的战术杀器，性价比远超重型轰炸机。"], [24, "1936.1.24 检查全国运输能力（Transport Capacity, TC），优化补给线流动通畅度。", "军队过大导致 TC 严重红字过载，部队移动缓慢且组织度无法恢复。", "【保障战时机动力】解散冗余部队使 TC 保持在健康绿字区间，部队移动速度与作战效能处于 100% 满状态。"], [25, "1936.1.25 不满度降至 3.16%；科技《基础机床》进度达 40%，研发进入加速期。", "科研进度仅 20%，工业升级节奏严重落后。", "【提速工业代际跃迁】机床研发完成后将立即接续《改良机床》（+5% IC），形成工业双连跳。"], [26, "1936.1.26 设定潜艇作战战术方针，将 U 型潜艇编为 6 艇一组的“狼群”潜艇支队（Wolfpack）。", "潜艇与战列舰混编，暴露潜艇隐蔽性优势。", "【大西洋破交战预备】纯潜艇编制在公海具备极高隐蔽性与护航船队搜索击沉率。"], [27, "1936.1.27 不满度降至 3.00%；社会动员全面就绪，有效 IC 恢复至 95 点以上。", "不满度仍高达 4.2%，工业产能持续折损。", "【工业爬坡拐点到来】距离第一轮全额工厂建造仅剩最后 3 天准备期。"], [28, "1936.1.28 锁定内陆 5 大核心省份（柏林、莱比锡、科隆、埃森、德累斯顿）为工厂建造基地。", "在易受轰炸的沿海前线省份造工厂，极易被摧毁。", "【内陆纵深工业安全】将核心工业置于内陆高基建腹地，彻底免受敌方舰炮轰击与早期战术空袭。"], [29, "1936.1.29 首月收官前夜！不满度降至 2.84%；确认所有科研团队、贸易路线与编制均处于最优解。", "各项参数混乱，工业缺乏长远发展战略规划。", "【完美工业底座构建】1936 年备战期基础完全夯实，无任何无效的 IC 与资源浪费。"], [30, "1936.1.30 1936 年首月完美收官！科技、贸易、军队与工业体系全方位跑顺，即将迎来 2 月初不满度清零与 30 点 IC 工厂狂潮！", "仍在用仅有的 IC 零星造低效民兵与卫戍部队，战略被动持续加剧。", "【确立世界大战霸业基础】在和平时期以最高效率完成去腐生肌与工业蓄力，为 1939 年横扫欧陆奠定不可逆转的工业胜势。"]];
+    const CHINA_DATA = [[1, "【立国定策】设定百家争鸣学派为《法家》（核心化速度+20%/农垦产出+15%）或《兵家》（士气+10%）；颁布《初税亩/军功均田》；征召封邑卿大夫私兵私甲；向周天子进贡换取“方伯执政”大义名分；遣谋士游说邻近大国结成合纵连横。", "机械向周边诸侯互递国书；国库全开维持无意义仪仗礼制，未改革世卿世禄特权，财政吃紧。", "【确立中央集权与变法基石】法家学派直接降低 20% 核心化成本与行政吞并时间；军功授田使全国预备役人力池瞬间提升 35%；周天子册封提供 +20 诸侯外交威望，规避“僭越”导致的列国围攻借口。"], [2, "【修筑水利与农桑长协】调拨粮秣修筑灌溉水利（如都江堰/郑国渠前置工程）；向江淮/巴蜀产粮大邦预订秋粮长单。", "放任农田原始耕作，遇水旱灾害则就地引发饥荒与流民叛乱。", "【锁死战时粮道命脉】水利工程永久提升该州郡粮食上限 25%，保证 10 万大军出征时不会因粮道断绝而在关外溃散。"], [3, "【兵种革新：车步转骑弩】解散笨重且消耗巨大的贵族青铜战车，将产能全数投入换装《强弩连弩营》与《胡服骑射游骑兵》。", "维持大量笨重古式兵车，在山地丛林地形战力折损 60%。", "【冷兵器战术代差革新】弩兵享有极高的先攻破甲值，骑射手具备 2 格机动包抄优势，在冲击阶段对传统车阵造成毁灭性打击。"], [4, "【险隘占领与关隘筑垒】测算行军步数，遣前锋抢占地利要塞（如函谷关、虎牢关、剑阁、井陉关），驻扎长枪精锐堵死通道。", "主力部队散落腹地，关隘城防空虚未设驻军。", "【一夫当关万夫莫开】占据险隘享有 +2 关隘防守投骰修正与绝对补给优势，敌军 5 万兵力强攻亦需承受 3 倍伤亡。"], [5, "【间谍行离间计与细作刺探】遣策士伪装成说客，潜入破局目标国施行离间计，散布谣言降低其君臣忠诚度，刺探粮仓布防。", "未设防谍网络，国内政情与军事部署被敌国细作一览无余。", "【瘫痪敌国高阶将领】离间计可迫使敌方君主罢免名将（如廉颇换赵括），使其前线军团指挥权重降为白板。"], [6, "【战时大义借口：尊王攘夷】以目标国“无道弑君”或“违逆天子朝命”为由，在诸侯会盟上宣布其为天下公敌（获得惩戒 CB）。", "以无名之师发动不义战，招致天下诸侯好感度暴跌 -50 并结成抗暴联盟。", "【合法开战免除外交惩罚】大义宣战不仅割地 AE 降低 25%，且允许呼叫周天子同盟军参战助威。"], [7, "【阵型推演与将帅拜将】拜高统率将领为主帅，设定战阵为《鱼丽之阵》或《鹤翼阵》（两翼铁骑突击，中军强弩齐射）。", "由宗室无能贵戚掌军，将帅无专长加成。", "【冲击战阵加成】鹤翼阵提供 +15% 侧翼包抄宽度，主帅冲击 Pip 4+ 确保首轮冲击战直接击溃敌军先锋。"], [8, "【后勤粮秣梯次转运】建立“沿水路梯次转运”粮道，民夫与粮船随军推进，确保前线大军口粮供应不断档。", "长途陆路运粮，运输途中损耗率高达 70%，前线士卒忍饥挨饿。", "【后勤零损耗保障】水运粮道将转运成本降低 80%，前线士气保持满额 4.0 亢奋状态。"], [9, "【外交牵制与侧翼防背刺】以赠送战马、美玉与质子（Hostage）为筹码，稳住侧翼强邻（如远交近攻，连齐抗魏）。", "四面受敌，同时与 3 个大邦交恶。", "【远交近攻战略闭环】用极低的外交礼金换取侧翼大国 2 年内绝不出兵的盟约，锁定局部 1v1 歼灭战。"], [10, "【大军抵前沿隐蔽集结】精锐大军悄然进驻距敌仅 1 舍（30里）的山林营垒，下达“衔枚疾走”指令封锁一切军情泄露。", "大张旗鼓调兵，敌军提前洞悉并固守城池。", "【战场绝对奇袭】彻底剥夺敌军的战备时间，迫使其在仓促无备中被迫野战接敌。"], [11, "【12.11 宣战解禁！誓师出征】宣战保护解禁瞬间正式誓师！战鼓齐鸣，前锋铁骑兵分三路直插敌都！", "才开始缓慢召集卿大夫封邑私兵，各路诸侯扯皮拖沓。", "【闪电破局先发制人】在敌国完成全面战时动员前 10 天发动致命打击。"], [12, "【首场决战：诱敌出关聚歼】示弱诱敌深入，将敌军主力引诱至平原狭长地带，伏兵四起切断其退路！", "中军冒进中伏，车阵在泥泞中被乱箭射塌。", "【全歼敌军主力战役】利用地形包夹触发《关门打狗》机制，单场战役击溃敌方 1.5 万主力，斩将夺旗。"], [13, "【战俘降卒处置：收编与屯垦】将俘获的 8000 降卒挑拣精壮编入敢死先锋，老弱发配后方开垦官田荒地。", "盲目坑杀降卒引发全境死战，或无力供粮导致降卒兵变。", "【人口即刻变现为战力】降卒补充省去 8000 本土人力消耗，后方屯垦使下月官田粮食产出直接增产 30%。"], [14, "【长围困敌城：断水绝粮】主力大军兵临敌国国都，开掘深沟高垒筑成长围，截断护城河源头与粮道。", "强行用士卒肉身蚁附攻城，城下死伤枕藉。", "【零伤亡破城准备】断绝水源使城内每日爆发瘟疫，守军防御骰点每 10 天递减 -1。"], [15, "【造攻城橹与投石机（抛石机）】军匠连夜打造云梯、冲车与重型杠杆抛石机，昼夜轰击夯土城墙。", "无攻城器械，徒手攀爬送死。", "【弥补无火药时代的攻城短板】抛石机提供 +2 破墙修正，极速砸塌外郭夯土城墙。"], [16, "【心理战与策反内应】向城内射入劝降绢书，策反城内被排挤的副将或世家大族，许诺破城后保留其宗庙田产。", "死板攻城，逼迫城内各阶层团结死守。", "【里应外合打开城门】成功买通城内豪强，围城第 20 天约定夜间开门献城，省去数年苦战。"], [17, "【攻克都邑！入主宫室】大军克期破城！下令严禁焚掠市井，整肃军纪，封存图籍府库，收缴国之重宝（九鼎/传国玉玺）。", "破城后纵兵大掠，焚毁市井宫庙，民心尽失。", "【接管统治合法性】完整接收敌国户籍档案与仓廪，民心叛乱度降低至 0，威望暴涨 +50。"], [18, "【推行郡县制与废分封】在占领区推行郡县化，设立太守与县令直接统辖，废除旧世家世卿世禄领地。", "继续分封功臣亲族，不出三代又分裂为敌对军阀。", "【终结封建割据隐患】郡县直辖使该地区 100% 税赋与人力尽归国库，彻底消灭中央集权阻碍。"], [19, "【迁豪强实京师（人口大迁移）】将原敌国 3000 户豪强富贾强行迁往本国国都，充实京畿百工与商市。", "放任地方豪族盘踞旧地，伺机复辟叛乱。", "【京畿经济几何级暴涨】国都商业税收与手工业产出瞬间翻倍，地方失去复辟领导阶层。"], [20, "【军功爵赏与授田大典】举行凯旋献俘大典，按斩首与破城军功授田赐爵，士卒人人争先奋勇杀敌。", "赏赐不公，宗室中饱私囊，士卒怨声载道。", "【战斗意志持久锁定】军功爵制激活全民族尚武精神，全国征兵速度提升 50%，士气上限提升 15%。"], [21, "【战时粮草盘点与休养生息】清点各邑府库，战时缴获粮食 50 万石，拨付 20 万石赈济新附之民，收拢人心。", "搜刮新征服民脂民膏，逼反新占领区百姓。", "【极速消化占领地】赈灾使新附省份自治度以每月 1% 极速下降，迅速转化为稳固大后方。"], [22, "【构筑新边界防线：修筑长城/烽燧】在新征服北疆险隘修筑烽燧堡垒，串联成防御长城，抵御游牧骑兵袭扰。", "边境大开无防守纵深，任由异族骑兵长驱直入抢掠。", "【游牧骑兵绝对屏障】烽燧长城使游牧骑兵掠夺收益降低 80%，预警时间提前 10 天。"], [23, "【冶铁官营与盐铁专卖】推行《盐铁论》经济国策，将铁矿山与盐池收归官营，统一定价专卖。", "盐铁私营流失暴利，地方豪商富可敌国。", "【国家财政命脉垄断】盐铁专卖直接提供 +3 杜卡特/月稳定现金流，彻底告别财政赤字。"], [24, "【选拔贤能策士：招贤令】颁布《求贤令》，不拘一格招募天下游士辩士，任用客卿执掌国政枢要。", "任人唯亲，排斥外邦客卿，治国人才匮乏。", "【获取顶级行政加成】顶级客卿（如张仪、商鞅、诸葛亮）提供行政/外交点数 +3 增益与外交合纵特权。"], [25, "【整肃舟师水军（长江/黄河水运）】在江淮重要渡口组建楼船水师，打造蒙冲斗舰，掌控大江控制权。", "忽视水军，陆军渡江时被敌方舟师半渡而击全歼。", "【水陆并进立体战力】掌握水道即可截断敌国南北通道，随时实现跨江两栖登陆突击。"], [26, "【秋收大盘点与入仓封存】全国秋粮大丰收，各大粮仓粮食储量突破 3 年战备需求底线。", "粮食储量仅够维持 3 个月，一旦灾年全军断粮。", "【具备灭国总体战资本】满仓粮草支撑发起长达数年的大兵团灭国决战，无后顾之忧。"], [27, "【诸侯会盟！确立天下霸权】召集天下诸侯于葵丘/首止会盟，周天子遣使赐胙，正式加封为中原霸主！", "被列国视为暴秦/逆贼，天下共讨之。", "【霸主会盟外交特权】霸主身份享有对任何诸侯发动仲裁与号令诸侯不准私斗的至高外交特权。"], [28, "【铸造统一度量衡与通商货币】颁布《统一度量衡律》，统一定制青铜半两钱与官斛官尺，繁荣列国商贸。", "各地度量衡混乱，商贸阻滞，假币横行。", "【国家商业力量暴涨】统一货币使国内贸易力量提升 30%，商人阶层满意度达到 100%。"], [29, "【编户齐民与大索貌阅】清查全国隐藏户口与奴婢，将私家佃农全部转入国家户籍名册（编户齐民）。", "世家豪强隐匿数万户口，国家税基与兵源枯竭。", "【国家税基与兵源翻倍】编户齐民使国家纳税人口与可征兵源瞬间暴增 40%，国力再上新台阶。"], [30, "【三十日/回完美收官：奠定一统六合胜势】疆域倍增、郡县运转、粮满府库、铁甲锐士百万，开启横扫六国一统华夏之路！", "国库耗尽、列国包围网成立、内乱频发，陷入万劫不复。", "【华夏古典冷兵器霸业确立】在冷兵器东亚大陆上，以“法家集权 + 郡县改革 + 军功爵锐士 + 盐铁水利”铸就不可逆转的千秋大一统胜势！"]];
+    const FOREIGN_DATA = [[1, "【Day 1 封建采邑与奴隶总动员】极限暂停！颁布贵族与教士阶层特权；调动封建征召兵（Feudal Levies）；检查地中海/黑海运粮航线；重骑兵与斯巴达重步配比拉至 80%；向战神献祭获取 +10% 士气；向邻近弱小城邦强索进贡（Tribute）。", "机械遍历周边签署互不侵犯；开局即动员全部卫戍，耗尽粮仓储备；骑兵与步兵按 1:1 乱配。", "【冲击时代兵种配比最优解】冷兵器时代无火力阶段，冲击值（Shock）决定 100% 杀伤。80% 满编重骑兵在冲击阶段享有 +2 侧翼包抄宽度，首轮 3 天可直接蒸发敌方轻步兵；开局献祭锁定 +10% 士气上限。"], [2, "【建立地中海谷物输入长协】调整粮食贸易路线，向产粮大省（如埃及、西西里、黑海沿岸）下单建立粮食输入长协。", "忽视粮食系统，导致大城市在冬歇期陷入饥荒。", "【规避饥荒减员】确保主力军团集结省份粮食储备盈余 >120%，防止大军集结时瞬间吃光地块食物引发暴动与 10%/月 饥荒损耗。"], [3, "【精选高冲击重步兵与封建骑士】解散无用的低速轻装农兵，将资金集中于招募冲击点数 4+ 的重装步兵（Hoplite / 封建骑士）。", "招募大量廉价民兵填补编制，拉低全军士气与战术宽度。", "【精兵冲击抗线】1 队重装步兵的防御 Pip 可抵御 3 队农兵，维持战线不崩溃以掩护两翼重骑兵穿插。"], [4, "【通讯效率（CE）与分封采邑】测算封建领地通讯效率（CE / Travel Time），对偏远落后省份直接分封为封建采邑（Fief / Vassal）。", "强行直辖所有偏远省份，导致自治度飙升至 100% 且叛乱四起。", "【通讯效率套利】偏远省份直辖收益趋近于 0，分封给封臣可白嫖封臣的独立人力池、金币进贡与开战时的自动跟随仆从军（Vassal Swarm）。"], [5, "【军事威慑勒索进贡】派出使节向 2 个弱小城邦实施“军事威慑”（Intimidation），强索一次性进贡现金与奴隶。", "缓慢伪造宣称，白白耗费外交时间。", "【空手套白狼掠夺资金】凭借开局重装部队的虚高战力评分，直接威慑小国进贡 50~100 德拉克马/金币，用于支付战时雇佣兵。"], [6, "【河谷梯次行军防损耗】测算行军补给上限，将主力军团拆分为 2 个各 4k 的分队，沿高补给河谷省份梯次推进。", "8k 大军挤在 3k 补给上限的山地，每天非战斗死伤 50 人。", "【零非战斗损耗行军】冷兵器补给线脆弱，拆分部队梯次移动可使非战斗损耗（Attrition）彻底归零。"], [7, "【辨识要塞：栅栏 vs 石制卫城】查看敌方要塞类型：确认目标为木质栅栏（Wooden Palisade）还是石制卫城（Stone Acropolis）。", "盲目围攻高级石制要塞，部队被卡在城下数年。", "【精准挑选软柿子】木质栅栏城防无要塞等级防御加成，可直接在 3~6 个月内强攻破城；避开石制要塞消耗战。"], [8, "【高冲击与高机动机领拜将】将高冲击（Shock Pip）与高机动（Maneuver）将领指派给重骑兵军团。", "将领随机分配给驻防步兵，重骑兵缺乏将领加成。", "【将领点数利用率最大化】高机动机领可减少渡河地形惩罚（-1 River Cross Penalty），高冲击将领配合纯骑兵实现首战秒杀。"], [9, "【王室血誓锁定侧翼安全】与邻近中立大国签订《王室联姻》或《互不侵犯血誓》，锁定侧翼安全。", "四面树敌，外交孤立。", "【外交单向防御锁】确保首战打响后侧翼不会遭遇背刺偷袭。"], [10, "【设定全员充奴战时国策】检查奴隶市场价格，设定“战后战利品分配政策”为《全部人口充奴》（Enslavement）。", "默认选择宽松占领政策，错失奴隶红利。", "【人口即生产力】冷兵器时代核心资产是劳动力，充奴政策可将战败省份 30%~50% 人口直接搬迁至首都矿山。"], [11, "【12.11 宣战解禁！雷霆突袭】停战保护期解禁！确认战争借口（部落劫掠 CB）就绪，向目标城邦正式宣战！", "宣战拖沓，等待目标拉到外部强援。", "【闪击破局战打响】趁目标国尚未完成封建征召（Levy Mobilization）、兵力仅有常备 1k 守卫时发动雷霆突袭。"], [12, "【重骑兵高速穿插抓单】重骑兵军团利用高移动力（Movement 1.5），在敌方散兵集结前直插敌军驻地！", "部队缓慢推进，给敌方充足时间完成全境大合兵。", "【抓单聚歼战术】在敌方散兵汇合前逐个击破，首战直接全歼敌方主力（Stackwipe），将战争分数拉至 40%+。"], [13, "【决战结算：俘获战俘为奴】触发首场决战结算！纯冲击阶段重骑兵触发侧翼两倍暴击，俘虏敌军残兵为奴隶。", "肉搏陷入拉锯，双方死伤惨重。", "【战俘转化红利】单场战役俘获 300~500 名战俘奴隶，自动输送至后方银矿，月矿业收入即刻增加 +0.5 金。"], [14, "【现场建造冲车与简易云梯】主力军团兵临敌方无防备省份，建造简易云梯与撞槌（Battering Rams）。", "在外围平原无意义驻扎，未迅速切入城防。", "【加速围城第一阶段】撞槌提供 +1 围城投骰修正，弥补无火炮时代的破墙惩罚。"], [15, "【焦土掠夺断敌粮道】分遣 1 队轻骑兵执行“焦土掠夺”（Raid & Pillaging），烧毁敌方粮仓与农田。", "仅进行常规占领，不掠夺敌方经济带。", "【彻底切断敌国补给】掠夺直接提现 30 杜卡特战利品，并使敌国下月粮食归零陷入全国叛乱。"], [16, "【战舰封锁海港断水粮】战舰驶入敌方沿海港口，切断海上渔业与谷物补给线（Blockade 100%）。", "海军闲置在港口内，未形成海陆封锁合力。", "【海陆双封锁断粮】沿海城邦在 100% 海上封锁下，围城周期从 30 天缩短为 15 天，投骰直接获得 +2 饥荒修正。"], [17, "【城破守军锐减！云梯强攻】当守军因断粮跌破 300 人且城墙破损（Breach）时，下达全军云梯强攻（Assault）！", "机械等待 2 年自然围攻，白白耗死数千兵力。", "【冷兵器强攻破城】集中重步兵云梯强攻，仅以 80 人阵亡代价在 3 天内强拔要塞，省下整整 18 个月的漫长围城消耗！"], [18, "【入主宫室搬空国库】攻陷敌方首都！触发掠夺机制：将王宫国库金银搬空，掳走王室工匠与祭司。", "占领后无作为，任由战利品流失。", "【资本原始积累】单次掠夺获得 150 杜卡特流动资金与 +50 威望，首都文化科技点数瞬间暴涨。"], [19, "【借入商人谷物平准贷款】向市民/商人阶层借入战时谷物贷款，确保前线部队在进入冬歇期前获得充足面饼与咸肉配给。", "粮饷见底，前线部队士气崩盘并爆发兵变。", "【战时士气锁定】充足的口粮配给使部队士气维持在满额 3.5 以上，时刻具备迎战敌方雇佣兵能力。"], [20, "【山地关隘设伏击溃援军】敌方残余雇佣军企图反攻解围，人类玩家利用山地隘口构筑防御阵地。", "在平原与敌军重步兵对撞，损失惨重。", "【冷兵器地形碾压】山地隘口使敌军承受 -2 投骰惩罚且无法展开宽阵，我方 2k 步兵即可全歼敌方 5k 乱军。"], [21, "【月度脉冲：奴隶入矿产出翻倍】掠夺所得奴隶正式进入国家矿山与农庄，全国月度粮食与金币产出刷新。", "经济陷入战时停滞，财政赤字恶化。", "【奴隶经济飞轮启动】奴隶不消耗工资且提供 100% 生产力，国家月现金流在战时逆势转正（+2.5 金/月）。"], [22, "【达成 100% 和约谈判】敌全境被占，达成 100% 战争分数（War Score 100%）。进入和平谈判面板！", "盲目全境吞并，导致过度扩张（OE）与 CE 通讯崩溃。", "【封建时代最优和约模型】拒绝无脑全割！割取 1 个核心产金/产粮港口，其余领土强迫其签署《臣服封建附庸条约》（Subjugation）。"], [23, "【签署和约与收割臣属】和约正式签署！收缴全额战败赔款、割让核心港口、敌国正式沦为封建附庸国。", "吞下大片废地，消化成本吞噬所有君主点数。", "【规避核心化陷阱】冷兵器时代无行政效率（Absolutism），直辖割地会造成 90% 自治度；收为附庸可立得其 100% 军力跟随。"], [24, "【分封功臣平衡阶层忠诚】将割得的核心港口就地分封给战功显赫的本土贵族，降低国内贵族叛乱度。", "强行收归国有，引发国内贵族起兵叛乱。", "【阶层忠诚度平衡】分封土地使贵族忠诚度重回 60% 荣光区间，获得全国 +10% 陆军士气与 -10% 征召兵费用。"], [25, "【战后人口大迁徙】开启战后“人口大迁徙”（Population Resettlement）：将 2000 名战俘迁入首都卫城。", "人口留在原地，边疆随时爆发复国暴动。", "【首都核心极化发展】首都人口突破 2 万大关，解锁下一等级的大神庙与城市城墙建造槽位。"], [26, "【严寒冬歇撤军入大城】严令全军撤出野外营地，全数进驻有粮仓的沿海大城市过冬。", "将军队留在北方雪原野外，单月暴毙 15% 人力。", "【绝对零损耗冬歇】城市粮仓抵消严寒减员，安全度过 11 月至次年 2 月的致命冬歇期。"], [27, "【动工大引水渠与粮仓】动用战利品金币，在首都开工建造《石制引水渠》（Aqueduct）与《大粮仓》。", "金币挥霍在维持常备军上，缺乏城市基建。", "【城市承载力扩容】引水渠降低疾病爆发几率 50%，大粮仓使城市在未来被围时可坚守 5 年不倒。"], [28, "【附庸贡赋收缴入账】封臣附庸国完成第一轮战争创伤恢复，开始按月向宗主国上缴 30% 粮食与 20% 军费贡赋。", "占领区叛乱四起，每年需派大军前去镇压。", "【地缘贡赋收割】宗主国无需驻军，净享附庸国源源不断的人力兵源与谷物供给。"], [29, "【倾销青铜铁矿与橄榄油】将国内多余青铜、铁矿石与橄榄油挂单，通过腓尼基/威尼斯商船向全地中海倾销。", "闭关自守，缺乏远洋贸易网络。", "【垄断战略物资定价权】高价向缺铁城邦出售武器原料，牟取 300% 暴利。"], [30, "【三十日收官：确立地中海霸权】确立 1 核心卫城 + 2 封建附庸体系，手握 2000 矿山奴隶与满仓谷物，军力跃居区域霸主！", "财政破产、军队冻死过半、后方叛乱四起，彻底沦为待宰羔羊。", "【冷兵器破局终极胜势】在没有火炮与近代官僚制的残酷时代，凭借“重骑冲击 + 奴隶经济 + 粮食长协 + 封建附庸群”奠定千年中世纪帝国根基！"]];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderAllTables();
+      updateDailyTimeline(1);
+      initRadarAndAreaCharts();
+    });
+
+    function switchTab(tabId) {
+      const tabs = ["dashboard", "civ", "eu4", "hoi2", "chinacold", "foreigncold", "macro"];
+      tabs.forEach(t => {
+        const view = document.getElementById("view-" + t);
+        const btn = document.getElementById("tab-btn-" + t);
+        if (t === tabId) {
+          view.classList.remove("hidden");
+          btn.className = "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 text-brand-gold font-semibold border border-brand-gold/40 shadow-sm";
+        } else {
+          view.classList.add("hidden");
+          btn.className = "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60";
+        }
+      });
+    }
+
+    function renderAllTables() {
+      // 1. Civ
+      document.getElementById("civ-table-body").innerHTML = CIV_DATA.map(r => `
+        <tr class="hover:bg-slate-900/60 transition-colors">
+          <td class="py-3 px-3 text-center font-mono font-bold text-amber-400 whitespace-nowrap">T${r[0]}</td>
+          <td class="py-3 px-4 font-medium text-emerald-300/90 leading-relaxed">${r[1]}</td>
+          <td class="py-3 px-4 text-slate-400 leading-relaxed">${r[2]}</td>
+          <td class="py-3 px-4 text-amber-200/90 leading-relaxed bg-amber-950/10 font-sans">${r[3]}</td>
+        </tr>
+      `).join("");
+
+      // 2. EU4
+      document.getElementById("eu4-table-body").innerHTML = EU4_DATA.map(r => `
+        <tr class="hover:bg-slate-900/60 transition-colors">
+          <td class="py-3 px-3 text-center font-mono font-bold text-cyan-400 whitespace-nowrap">D${r[0]}</td>
+          <td class="py-3 px-4 font-medium text-emerald-300/90 leading-relaxed">${r[1]}</td>
+          <td class="py-3 px-4 text-slate-400 leading-relaxed">${r[2]}</td>
+          <td class="py-3 px-4 text-cyan-200/90 leading-relaxed bg-cyan-950/10 font-sans">${r[3]}</td>
+        </tr>
+      `).join("");
+
+      // 3. HoI2
+      document.getElementById("hoi2-table-body").innerHTML = HOI2_DATA.map(r => `
+        <tr class="hover:bg-slate-900/60 transition-colors">
+          <td class="py-3 px-3 text-center font-mono font-bold text-rose-400 whitespace-nowrap">D${r[0]}</td>
+          <td class="py-3 px-4 font-medium text-emerald-300/90 leading-relaxed">${r[1]}</td>
+          <td class="py-3 px-4 text-slate-400 leading-relaxed">${r[2]}</td>
+          <td class="py-3 px-4 text-rose-200/90 leading-relaxed bg-rose-950/10 font-sans">${r[3]}</td>
+        </tr>
+      `).join("");
+
+      // 4. China Cold
+      document.getElementById("china-table-body").innerHTML = CHINA_DATA.map(r => `
+        <tr class="hover:bg-slate-900/60 transition-colors">
+          <td class="py-3 px-3 text-center font-mono font-bold text-red-400 whitespace-nowrap">D${r[0]}</td>
+          <td class="py-3 px-4 font-medium text-emerald-300/90 leading-relaxed">${r[1]}</td>
+          <td class="py-3 px-4 text-slate-400 leading-relaxed">${r[2]}</td>
+          <td class="py-3 px-4 text-red-200/90 leading-relaxed bg-red-950/10 font-sans">${r[3]}</td>
+        </tr>
+      `).join("");
+
+      // 5. Foreign Cold
+      document.getElementById("foreign-table-body").innerHTML = FOREIGN_DATA.map(r => `
+        <tr class="hover:bg-slate-900/60 transition-colors">
+          <td class="py-3 px-3 text-center font-mono font-bold text-blue-400 whitespace-nowrap">D${r[0]}</td>
+          <td class="py-3 px-4 font-medium text-emerald-300/90 leading-relaxed">${r[1]}</td>
+          <td class="py-3 px-4 text-slate-400 leading-relaxed">${r[2]}</td>
+          <td class="py-3 px-4 text-blue-200/90 leading-relaxed bg-blue-950/10 font-sans">${r[3]}</td>
+        </tr>
+      `).join("");
+    }
+
+    function updateDailyTimeline(val) {
+      const idx = parseInt(val) - 1;
+      document.getElementById("slider-val-badge").innerText = "第 " + val + " 天 / 回合";
+
+      // Civ
+      const civ = CIV_DATA[Math.min(idx, CIV_DATA.length - 1)];
+      document.getElementById("civ-turn-disp").innerText = civ[0];
+      document.getElementById("civ-snap-player").innerHTML = "<strong class='text-emerald-400'>玩家:</strong> " + civ[1];
+      document.getElementById("civ-snap-roi").innerHTML = "<strong class='text-amber-400'>收益:</strong> " + civ[3];
+
+      // EU4
+      const eu4 = EU4_DATA[Math.min(idx, EU4_DATA.length - 1)];
+      document.getElementById("eu4-turn-disp").innerText = eu4[0];
+      document.getElementById("eu4-snap-player").innerHTML = "<strong class='text-emerald-400'>玩家:</strong> " + eu4[1];
+      document.getElementById("eu4-snap-roi").innerHTML = "<strong class='text-cyan-400'>收益:</strong> " + eu4[3];
+
+      // HoI2
+      const hoi2 = HOI2_DATA[Math.min(idx, HOI2_DATA.length - 1)];
+      document.getElementById("hoi2-turn-disp").innerText = hoi2[0];
+      document.getElementById("hoi2-snap-player").innerHTML = "<strong class='text-emerald-400'>玩家:</strong> " + hoi2[1];
+      document.getElementById("hoi2-snap-roi").innerHTML = "<strong class='text-rose-400'>收益:</strong> " + hoi2[3];
+
+      // China Cold
+      const china = CHINA_DATA[Math.min(idx, CHINA_DATA.length - 1)];
+      document.getElementById("china-turn-disp").innerText = china[0];
+      document.getElementById("china-snap-player").innerHTML = "<strong class='text-emerald-400'>玩家:</strong> " + china[1];
+      document.getElementById("china-snap-roi").innerHTML = "<strong class='text-red-400'>收益:</strong> " + china[3];
+
+      // Foreign Cold
+      const foreign = FOREIGN_DATA[Math.min(idx, FOREIGN_DATA.length - 1)];
+      document.getElementById("foreign-turn-disp").innerText = foreign[0];
+      document.getElementById("foreign-snap-player").innerHTML = "<strong class='text-emerald-400'>玩家:</strong> " + foreign[1];
+      document.getElementById("foreign-snap-roi").innerHTML = "<strong class='text-blue-400'>收益:</strong> " + foreign[3];
+    }
+
+    function initRadarAndAreaCharts() {
+      const ctxRadar = document.getElementById("radarChart").getContext("2d");
+      new Chart(ctxRadar, {
+        type: "radar",
+        data: {
+          labels: ["长期复利规划", "极限微操套利", "早战决断破局", "地缘外交杠杆", "战略视野预判", "风险承受边界"],
+          datasets: [
+            {
+              label: "人类高玩 (Human Expert)",
+              data: [96, 98, 94, 92, 95, 96],
+              backgroundColor: "rgba(212, 175, 55, 0.25)",
+              borderColor: "#d4af37",
+              pointBackgroundColor: "#d4af37",
+              borderWidth: 2
+            },
+            {
+              label: "游戏引擎/MOD AI",
+              data: [35, 38, 55, 42, 30, 25],
+              backgroundColor: "rgba(244, 63, 94, 0.2)",
+              borderColor: "#f43f5e",
+              pointBackgroundColor: "#f43f5e",
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: { color: "#1f2937" },
+              grid: { color: "#1f2937" },
+              pointLabels: { color: "#94a3b8", font: { size: 10 } },
+              ticks: { display: false, max: 100, min: 0 }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: "#cbd5e1", font: { size: 11 } } }
+          }
+        }
+      });
+
+      const ctxArea = document.getElementById("areaChart").getContext("2d");
+      new Chart(ctxArea, {
+        type: "line",
+        data: {
+          labels: ["T1", "T5", "T10", "T15", "T20", "T25", "T30"],
+          datasets: [
+            {
+              label: "🔍 探索情报",
+              data: [35, 30, 20, 15, 10, 5, 5],
+              fill: true,
+              backgroundColor: "rgba(212, 175, 55, 0.35)",
+              borderColor: "#d4af37",
+              tension: 0.3
+            },
+            {
+              label: "🏗️ 内政经济 (粮草/变法/特权)",
+              data: [40, 45, 40, 45, 45, 45, 45],
+              fill: true,
+              backgroundColor: "rgba(16, 185, 129, 0.35)",
+              borderColor: "#10b981",
+              tension: 0.3
+            },
+            {
+              label: "⚔️ 军事征服 (冲击/强攻/破城)",
+              data: [5, 10, 25, 25, 30, 35, 35],
+              fill: true,
+              backgroundColor: "rgba(244, 63, 94, 0.35)",
+              borderColor: "#f43f5e",
+              tension: 0.3
+            },
+            {
+              label: "🤝 外交地缘 (会盟/附庸/合纵)",
+              data: [15, 10, 10, 10, 10, 10, 10],
+              fill: true,
+              backgroundColor: "rgba(168, 85, 247, 0.35)",
+              borderColor: "#a855f7",
+              tension: 0.3
+            },
+            {
+              label: "🔬 科技政体 (法家/机床/尤里卡)",
+              data: [5, 5, 5, 5, 5, 5, 5],
+              fill: true,
+              backgroundColor: "rgba(6, 182, 212, 0.35)",
+              borderColor: "#06b6d4",
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: "#1f2937" }, ticks: { color: "#94a3b8" } },
+            y: {
+              stacked: true,
+              max: 100,
+              grid: { color: "#1f2937" },
+              ticks: { color: "#94a3b8", callback: v => v + "%" }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: "#cbd5e1", font: { size: 10 } } }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

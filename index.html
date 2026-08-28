@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EU4 Clausewitz Engine - 核心底层算法与历史映射全景可视化沙盘</title>
+  <title>Strategy Game Design & Analysis Hub - 策略游戏设计与逆向分析总站</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -17,11 +17,10 @@
               goldlight: "#f5d77f",
               darkgold: "#997b24",
               crimson: "#881337",
-              royalred: "#991b1b",
+              emerald: "#10b981",
               slatebg: "#090d16",
               cardbg: "#111827",
-              cardborder: "#1f2937",
-              parchment: "#f8fafc"
+              cardborder: "#1f2937"
             }
           },
           fontFamily: {
@@ -34,866 +33,293 @@
   </script>
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- KaTeX -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-
   <style>
     body {
-      background: radial-gradient(circle at 50% 0%, #172033 0%, #090d16 75%, #05070b 100%);
+      background: radial-gradient(circle at 50% 0%, #151e30 0%, #090d16 75%, #05070b 100%);
       color: #e2e8f0;
       min-height: 100vh;
     }
-    .gold-glow {
-      box-shadow: 0 0 25px -5px rgba(212, 175, 55, 0.25);
-    }
-    .gold-border {
-      border: 1px solid rgba(212, 175, 55, 0.35);
-    }
+    .gold-glow { box-shadow: 0 0 25px -5px rgba(212, 175, 55, 0.25); }
+    .gold-border { border: 1px solid rgba(212, 175, 55, 0.35); }
     .gold-border-hover:hover {
       border-color: rgba(212, 175, 55, 0.8);
       box-shadow: 0 0 20px -3px rgba(212, 175, 55, 0.35);
     }
-    .custom-scroll::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .custom-scroll::-webkit-scrollbar-track {
-      background: #0b0f19;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-      background: #2a3449;
-      border-radius: 3px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb:hover {
-      background: #d4af37;
-    }
-    .katex-display {
-      margin: 0.75em 0 !important;
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 0.5em 0;
-    }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0b0f19; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #2a3449; border-radius: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #d4af37; }
   </style>
 </head>
 <body class="font-sans antialiased custom-scroll selection:bg-brand-gold selection:text-black">
 
-  <!-- TOP HEADER / HERO -->
+  <!-- TOP HEADER -->
   <header class="border-b border-brand-cardborder bg-brand-slatebg/80 backdrop-blur-md sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-gold to-brand-crimson p-0.5 shadow-lg flex items-center justify-center">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-gold via-amber-500 to-brand-crimson p-0.5 shadow-lg flex items-center justify-center">
           <div class="w-full h-full bg-brand-slatebg rounded-[7px] flex items-center justify-center">
-            <i class="fa-solid fa-crown text-brand-gold text-lg"></i>
+            <i class="fa-solid fa-chess-knight text-brand-gold text-lg"></i>
           </div>
         </div>
         <div>
           <h1 class="font-serif text-lg sm:text-xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brand-goldlight via-brand-gold to-amber-200">
-            EU4 CLAUSEWITZ ARCHITECTURE
+            STRATEGY GAME DESIGN & ANALYSIS HUB
           </h1>
-          <p class="text-xs text-slate-400 font-mono">Core Reverse-Engineering & Historical Archetypes (1444–1821)</p>
+          <p class="text-xs text-slate-400 font-mono">大战略与 4X 策略游戏底层机制逆向 · 历史制度映射 · 自研策划与架构设计中心</p>
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
-      <nav class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 text-xs sm:text-sm font-medium">
-        <button onclick="switchTab('knowledge')" id="tab-btn-knowledge" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 bg-gradient-to-r from-amber-600/30 to-amber-500/20 text-brand-gold font-semibold border border-brand-gold/40 shadow-sm">
-          <i class="fa-solid fa-book-atlas"></i> 算法全景库
-        </button>
-        <button onclick="switchTab('simulators')" id="tab-btn-simulators" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
-          <i class="fa-solid fa-sliders"></i> 交互演算沙盘 <span class="bg-brand-crimson text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">6</span>
-        </button>
-        <button onclick="switchTab('matrix')" id="tab-btn-matrix" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
-          <i class="fa-solid fa-chess-rook"></i> 历史机制矩阵
-        </button>
-        <button onclick="switchTab('json')" id="tab-btn-json" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
-          <i class="fa-solid fa-code"></i> JSON 数据
-        </button>
-      </nav>
-
-      <!-- Action Buttons -->
       <div class="flex items-center gap-2">
-        <a href="first_30_turns_comparison.html" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-600/40 to-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/50 hover:border-amber-400 hover:bg-amber-500/40 transition-all shadow-md">
-          <i class="fa-solid fa-chart-line text-amber-400"></i> 前30天/回对比看板 & 冷兵器MOD <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        <a href="https://github.com/lizr-arch/StrategyGameDesign" target="_blank" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 border border-amber-500/30 transition-all shadow-sm">
+          <i class="fa-brands fa-github text-sm"></i> GitHub 仓库
         </a>
-        <button onclick="downloadJSON()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition-colors">
-          <i class="fa-solid fa-download"></i> 导出数据
-        </button>
       </div>
     </div>
   </header>
 
-  <!-- FLOATING QUICK NAVIGATION DOCK -->
-  <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
-    <a href="first_30_turns_comparison.html" class="flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900/95 text-amber-300 border-2 border-amber-500/60 shadow-2xl backdrop-blur-md hover:bg-amber-500/20 hover:scale-105 transition-all text-xs font-bold">
-      <i class="fa-solid fa-chart-line text-amber-400 text-sm"></i>
-      <span>切换至：前30天/回全景看板 & 冷兵器MOD</span>
-      <i class="fa-solid fa-arrow-right text-xs"></i>
-    </a>
-  </div>
-
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-    <!-- TAB 1: KNOWLEDGE BASE VIEW -->
-    <div id="view-knowledge" class="space-y-6">
-      
-      <!-- Top Metrics Dashboard -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div class="bg-slate-900/70 border border-slate-800 hover:border-amber-500/40 p-4 rounded-xl transition-all">
-          <div class="flex items-center justify-between text-slate-400 text-xs">
-            <span>战术与陆战体系</span>
-            <i class="fa-solid fa-shield-halved text-red-400"></i>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-bold font-serif text-slate-100" id="stat-tactical">6</span>
-            <span class="text-xs text-red-400 font-mono">Tactical/Military</span>
-          </div>
-          <div class="text-[11px] text-slate-400 mt-1 truncate">双轨杀伤 / 围城马尔可夫 / ZoC</div>
+  <!-- HERO SECTION -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
+    <div class="bg-gradient-to-r from-slate-900 via-brand-cardbg to-slate-900 border border-brand-cardborder rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
+        <i class="fa-solid fa-chess-board text-[260px]"></i>
+      </div>
+      <div class="relative z-10 max-w-3xl space-y-4">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono">
+          <i class="fa-solid fa-code-branch"></i> Open Strategy Architecture Repository
         </div>
-
-        <div class="bg-slate-900/70 border border-slate-800 hover:border-amber-500/40 p-4 rounded-xl transition-all">
-          <div class="flex items-center justify-between text-slate-400 text-xs">
-            <span>AI 决策与博弈引擎</span>
-            <i class="fa-solid fa-brain text-blue-400"></i>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-bold font-serif text-slate-100" id="stat-ai">5</span>
-            <span class="text-xs text-blue-400 font-mono">AI Decision</span>
-          </div>
-          <div class="text-[11px] text-slate-400 mt-1 truncate">外交接受 / 宣战阈值 / 破产树</div>
-        </div>
-
-        <div class="bg-slate-900/70 border border-slate-800 hover:border-amber-500/40 p-4 rounded-xl transition-all">
-          <div class="flex items-center justify-between text-slate-400 text-xs">
-            <span>王朝、联统与外交</span>
-            <i class="fa-solid fa-ring text-amber-400"></i>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-bold font-serif text-slate-100" id="stat-diplo">5</span>
-            <span class="text-xs text-amber-400 font-mono">Diplomatic/PU</span>
-          </div>
-          <div class="text-[11px] text-slate-400 mt-1 truncate">75/20/5 周期 / AE包围网 / 教廷</div>
-        </div>
-
-        <div class="bg-slate-900/70 border border-slate-800 hover:border-amber-500/40 p-4 rounded-xl transition-all">
-          <div class="flex items-center justify-between text-slate-400 text-xs">
-            <span>宏观经济与全球贸易</span>
-            <i class="fa-solid fa-coins text-emerald-400"></i>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-bold font-serif text-slate-100" id="stat-economy">5</span>
-            <span class="text-xs text-emerald-400 font-mono">Macro Economy</span>
-          </div>
-          <div class="text-[11px] text-slate-400 mt-1 truncate">DAG贸易流 / 通胀复利 / 思潮扩散</div>
+        <h2 class="text-2xl sm:text-3xl font-bold font-serif text-slate-100 tracking-tight leading-snug">
+          解构经典大战略算法，构筑下一代策略游戏设计蓝图
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          本仓库致力于**经典商业策略游戏（EU4, HoI, Civ, MEIOU）的底层数学模型与 AI 决策逆向**，同时沉淀**原创策略游戏的设计文档（GDD）、模块化架构指南、数值平衡工具沙盘与历史制度原型库**。
+        </p>
+        <div class="flex flex-wrap gap-3 pt-2 text-xs font-mono">
+          <span class="px-2.5 py-1 rounded-md bg-slate-800 text-cyan-300 border border-cyan-500/20">⚔️ 21项底层算法</span>
+          <span class="px-2.5 py-1 rounded-md bg-slate-800 text-amber-300 border border-amber-500/20">📊 5大时代前30天博弈</span>
+          <span class="px-2.5 py-1 rounded-md bg-slate-800 text-emerald-300 border border-emerald-500/20">🧪 在线机制原型沙盘</span>
+          <span class="px-2.5 py-1 rounded-md bg-slate-800 text-purple-300 border border-purple-500/20">📄 标准 GDD 策划案模板</span>
         </div>
       </div>
-
-      <!-- Filters & Search Toolbar -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3.5">
-        <div class="relative">
-          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-          <input type="text" id="search-input" oninput="renderCards()" placeholder="实时搜索机制名称、历史事件、数学公式、参数名、逆向逻辑..." 
-                 class="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-gold/60 focus:ring-1 focus:ring-brand-gold/50 transition-all">
-          <button onclick="clearSearch()" id="clear-search-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-
-        <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex flex-wrap items-center gap-1.5" id="category-pills">
-            <button onclick="setCategoryFilter('all')" class="cat-pill px-3 py-1.5 rounded-lg border bg-amber-500/20 text-brand-gold border-brand-gold/40 font-medium">全部领域 (All)</button>
-            <button onclick="setCategoryFilter('tactical_and_military')" class="cat-pill px-3 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800">⚔️ 战术与陆战</button>
-            <button onclick="setCategoryFilter('ai_decision_engine')" class="cat-pill px-3 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800">🤖 AI 决策引擎</button>
-            <button onclick="setCategoryFilter('diplomatic_and_dynastic')" class="cat-pill px-3 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800">👑 王朝与外交</button>
-            <button onclick="setCategoryFilter('macro_economy_and_trade')" class="cat-pill px-3 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800">🚢 宏观经济与贸易</button>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <span class="text-slate-500">算法形式:</span>
-            <select id="logic-filter" onchange="renderCards()" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-brand-gold/50">
-              <option value="all">全部算法形式 (All Logic Types)</option>
-              <option value="Deterministic Formula">Deterministic Formula (确定性闭式方程)</option>
-              <option value="Markov State Machine">Markov State Machine (马尔可夫状态机)</option>
-              <option value="State Machine">State Machine (离散状态转移机)</option>
-              <option value="Probability Distribution">Probability Distribution (加权概率分布)</option>
-              <option value="Rule-based Score">Rule-based Score (规则加权算分池)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between text-xs text-slate-400 px-1">
-        <div>共检索到 <span id="results-count" class="font-bold text-amber-300">0</span> 项底层机制核心词条</div>
-        <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
-          <i class="fa-solid fa-circle-info text-amber-500/70"></i> 点击卡片右上方按钮可快速复制公式或单条数据
-        </div>
-      </div>
-
-      <div id="cards-container" class="space-y-4"></div>
     </div>
+  </section>
 
-    <!-- TAB 2: INTERACTIVE SIMULATORS VIEW -->
-    <div id="view-simulators" class="hidden space-y-6">
-      
-      <div class="bg-gradient-to-r from-amber-950/40 via-slate-900 to-rose-950/30 border border-amber-500/30 rounded-2xl p-5 shadow-lg">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
-            <i class="fa-solid fa-compass-drafting"></i>
-          </div>
-          <div>
-            <h2 class="text-base font-bold text-amber-200 font-serif">Clausewitz Engine 实时演算沙盘与交互式计算器</h2>
-            <p class="text-xs text-slate-400 mt-0.5">无需打开游戏控制台，直接在浏览器中实时推演陆战伤亡、要塞围攻、75/20/5同君联合周期、AE包围网与贸易复利增殖模型。</p>
-          </div>
-        </div>
-      </div>
+  <!-- MAIN MODULES GRID -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10">
 
-      <div class="flex flex-wrap gap-2 text-xs font-medium">
-        <button onclick="switchSimulator('sim-combat')" id="btn-sim-combat" class="sim-nav-btn px-4 py-2 rounded-xl bg-brand-gold text-slate-950 font-bold border border-brand-gold">
-          <i class="fa-solid fa-swords mr-1.5"></i> 陆战伤害与歼灭计算器
-        </button>
-        <button onclick="switchSimulator('sim-siege')" id="btn-sim-siege" class="sim-nav-btn px-4 py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800">
-          <i class="fa-solid fa-fort-awesome mr-1.5"></i> 沃邦要塞围城马尔可夫沙盘
-        </button>
-        <button onclick="switchSimulator('sim-pu')" id="btn-sim-pu" class="sim-nav-btn px-4 py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800">
-          <i class="fa-solid fa-crown mr-1.5"></i> 75/20/5 同君联合周期推算器
-        </button>
-        <button onclick="switchSimulator('sim-ae')" id="btn-sim-ae" class="sim-nav-btn px-4 py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800">
-          <i class="fa-solid fa-users-viewfinder mr-1.5"></i> AE 侵略扩张与包围网预警
-        </button>
-        <button onclick="switchSimulator('sim-trade')" id="btn-sim-trade" class="sim-nav-btn px-4 py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800">
-          <i class="fa-solid fa-ship mr-1.5"></i> 贸易引流接力与复利增殖
-        </button>
-        <button onclick="switchSimulator('sim-ai')" id="btn-sim-ai" class="sim-nav-btn px-4 py-2 rounded-xl bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800">
-          <i class="fa-solid fa-robot mr-1.5"></i> AI 外交结盟与宣战意愿评估
-        </button>
-      </div>
-
-      <!-- SIMULATOR 1: LAND COMBAT -->
-      <div id="sim-combat" class="sim-panel bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
-              <i class="fa-solid fa-burst text-red-400"></i> 陆战伤害与士气双轨结算沙盘 (Land Combat Damage Resolution)
-            </h3>
-            <p class="text-xs text-slate-400 mt-1">模拟单兵种/军团在火力阶段（Fire Phase）或冲击阶段（Shock Phase）每3天造成的绝对死伤与士气打击。</p>
-          </div>
-          <span class="bg-red-950/60 text-red-400 border border-red-800/40 text-xs px-3 py-1 rounded-full font-mono">Phase Step: 3 Days</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-7 space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-400/90 mb-2 flex items-center gap-1.5">
-              <i class="fa-solid fa-sliders"></i> 战斗输入参数配置
-            </h4>
-
-            <div class="grid grid-cols-2 gap-3.5 text-xs">
-              <div>
-                <label class="block text-slate-400 mb-1">攻击方当前参战兵力 (Men)</label>
-                <input type="number" id="combat-strength" value="1000" step="100" min="100" max="40000" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">3天伪随机骰点 (Die Roll: 0–9)</label>
-                <input type="number" id="combat-die" value="5" min="0" max="9" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">将领点数差额 (Leader Pip Diff)</label>
-                <input type="number" id="combat-leader-diff" value="2" min="-6" max="6" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">兵种攻防 Pip 差额 (Off - Def Pip)</label>
-                <input type="number" id="combat-pip-diff" value="1" min="-6" max="6" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">地形与过河惩罚 (Terrain/River)</label>
-                <input type="number" id="combat-terrain" value="-1" min="-4" max="0" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">兵种科技火力/冲击基础值 (Tech Mod)</label>
-                <input type="number" id="combat-tech-mod" value="1.15" step="0.05" min="0.1" max="5.0" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">攻击方纪律 (Discipline %)</label>
-                <input type="number" id="combat-discipline" value="115" min="100" max="160" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">防守方军事战术 (Military Tactics)</label>
-                <input type="number" id="combat-tactics" value="2.0" step="0.25" min="0.5" max="5.0" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">作战能力加成 (Combat Ability %)</label>
-                <input type="number" id="combat-ability" value="20" min="0" max="100" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">攻击方最大士气 (Attacker Max Morale)</label>
-                <input type="number" id="combat-morale" value="5.5" step="0.1" min="1.0" max="12.0" oninput="calcCombat()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-            </div>
-          </div>
-
-          <div class="lg:col-span-5 space-y-4 flex flex-col justify-between">
-            <div class="bg-slate-950/80 border border-amber-500/30 rounded-xl p-4 space-y-3">
-              <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-300 flex items-center justify-between">
-                <span>实时伤害结算结果</span>
-                <span class="text-[10px] text-slate-400 font-mono">Engine Output</span>
-              </h4>
-
-              <div class="grid grid-cols-2 gap-3 pt-1">
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">有效最终骰点 (Effective Roll)</div>
-                  <div class="text-xl font-bold font-mono text-amber-300 mt-1" id="out-combat-eff-roll">7</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5" id="out-combat-base-cas">基础伤亡: 50 人</div>
-                </div>
-
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">单阶段敌军死伤 (Casualties)</div>
-                  <div class="text-2xl font-bold font-mono text-rose-400 mt-1" id="out-combat-casualties">79</div>
-                  <div class="text-[10px] text-rose-300/70 mt-0.5">每阶段3天造成的阵亡</div>
-                </div>
-
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">士气打击 (Morale Loss)</div>
-                  <div class="text-xl font-bold font-mono text-emerald-400 mt-1" id="out-combat-morale-dmg">0.72</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5">作用于目标当前士气池</div>
-                </div>
-
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">纪律/战术系数比值</div>
-                  <div class="text-xl font-bold font-mono text-cyan-400 mt-1" id="out-combat-disc-ratio">0.575</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5">Disc(1.15) / Tactics(2.0)</div>
-                </div>
-              </div>
-
-              <div id="stackwipe-banner" class="mt-3 p-3 rounded-lg bg-emerald-950/40 border border-emerald-800/40 flex items-center gap-3">
-                <i class="fa-solid fa-shield-virus text-emerald-400 text-base"></i>
-                <div class="text-xs">
-                  <div class="font-semibold text-emerald-300">正常交战状态 (Normal Battle)</div>
-                  <div class="text-[11px] text-slate-400 mt-0.5">若在前12天将敌军士气打空且兵力达 10:1，将触发瞬间全灭（Stackwipe）。</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="p-3 rounded-xl bg-slate-950/40 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-              <div class="text-amber-400/90 font-medium flex items-center gap-1">
-                <i class="fa-solid fa-lightbulb"></i> 逆向小技巧
-              </div>
-              <p>炮兵位于后排时提供 50% 防御 Pip 支援前排，并输出 50% 火力。科技 16 后炮兵火力产生质变，满编后排炮兵能在开局第 1–3 天火力阶段直接蒸发敌方前排。</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SIMULATOR 2: FORT SIEGE -->
-      <div id="sim-siege" class="sim-panel hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
-              <i class="fa-solid fa-chess-rook text-amber-400"></i> 沃邦要塞围城马尔可夫状态沙盘 (Vauban Fort Siege Simulator)
-            </h3>
-            <p class="text-xs text-slate-400 mt-1">推演单次 14 面骰的离散状态转移概率，支持手动点击推进围城进度模拟真实攻城。</p>
-          </div>
-          <button onclick="resetSiege()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700">
-            <i class="fa-solid fa-rotate-left mr-1"></i> 重置围城进度
-          </button>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-6 space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-xs">
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-400/90 mb-2">攻城前置环境参数</h4>
-
-            <div class="grid grid-cols-2 gap-3.5">
-              <div>
-                <label class="block text-slate-400 mb-1">要塞等级 (Fort Level: 2/4/6/8)</label>
-                <select id="siege-fort-level" onchange="calcSiege()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-                  <option value="1">1 级 (无要塞首都 / Capital 1)</option>
-                  <option value="2" selected>2 级 (城堡 / Castle 2)</option>
-                  <option value="4">4 级 (堡垒 / Bastion 4)</option>
-                  <option value="6">6 级 (星形要塞 / Star Fort 6)</option>
-                  <option value="8">8 级 (沃邦要塞 / Fortress 8)</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-slate-400 mb-1">火炮加成 (Artillery Bonus: 0–5)</label>
-                <input type="number" id="siege-artillery" value="3" min="0" max="8" oninput="calcSiege()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-
-              <div>
-                <label class="block text-slate-400 mb-1">围城将领攻城点 (General Siege Pip)</label>
-                <input type="number" id="siege-leader" value="2" min="0" max="6" oninput="calcSiege()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-
-              <div>
-                <label class="block text-slate-400 mb-1">城墙破损加成 (Breach: 0–3)</label>
-                <input type="number" id="siege-breach" value="0" min="0" max="3" oninput="calcSiege()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-
-              <div>
-                <label class="block text-slate-400 mb-1">守军要塞防御度 (Defensiveness %)</label>
-                <input type="number" id="siege-defensiveness" value="20" min="-50" max="150" oninput="calcSiege()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-
-              <div>
-                <label class="block text-slate-400 mb-1">进攻方攻城能力 (Siege Ability %)</label>
-                <input type="number" id="siege-ability" value="10" min="0" max="100" oninput="calcSiege()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-            </div>
-
-            <div class="pt-3 border-t border-slate-800 flex items-center gap-3">
-              <button onclick="rollNextSiegeTick()" class="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-dice text-sm"></i> 🎲 执行下一次围城周期 (Roll Tick)
-              </button>
-            </div>
-          </div>
-
-          <div class="lg:col-span-6 space-y-4">
-            <div class="bg-slate-950/80 border border-amber-500/30 rounded-xl p-4 space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-amber-300">当前围城累计状态</span>
-                <span class="text-xs font-mono text-cyan-400" id="siege-phase-percent">进度: 0%</span>
-              </div>
-
-              <div class="w-full bg-slate-900 rounded-full h-3.5 border border-slate-800 overflow-hidden p-0.5">
-                <div id="siege-progress-bar" class="bg-gradient-to-r from-amber-600 via-amber-400 to-emerald-400 h-full rounded-full transition-all duration-300" style="width: 7%"></div>
-              </div>
-
-              <div class="grid grid-cols-3 gap-2 text-center text-xs pt-1">
-                <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div class="text-[10px] text-slate-400">单周期耗时</div>
-                  <div class="text-base font-bold text-amber-300 mt-0.5" id="out-siege-tick-days">33 天</div>
-                </div>
-                <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div class="text-[10px] text-slate-400">累计攻城进度</div>
-                  <div class="text-base font-bold text-cyan-300 mt-0.5" id="out-siege-progress-val">+0 / 12</div>
-                </div>
-                <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                  <div class="text-[10px] text-slate-400">下轮陷落概率</div>
-                  <div class="text-base font-bold text-rose-400 mt-0.5" id="out-siege-fall-chance">0.0%</div>
-                </div>
-              </div>
-
-              <div class="bg-slate-900/90 rounded-lg p-2.5 border border-slate-800 text-[11px] font-mono space-y-1" id="siege-log">
-                <div class="text-slate-500">// 围城日志待机中，点击上方按钮掷骰...</div>
-              </div>
-            </div>
-
-            <div class="bg-slate-950/50 border border-slate-800 rounded-xl p-3.5 text-[11px] space-y-2">
-              <div class="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                <span>马尔可夫单周期事件概率分布</span>
-                <span class="text-slate-500 font-mono">14-Sided Die</span>
-              </div>
-              <div class="space-y-1.5 text-slate-400" id="siege-probability-bars"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SIMULATOR 3: PERSONAL UNION CYCLE -->
-      <div id="sim-pu" class="sim-panel hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
-              <i class="fa-solid fa-crown text-amber-400"></i> Atwix 75/20/5 统治者继承与同君联合三相周期推算器
-            </h3>
-            <p class="text-xs text-slate-400 mt-1">根据君王去世天数（Death Day）、首都地块 ID 与发展度，逆向推算绝嗣继承状态机落入的具体 Phase 阶段。</p>
-          </div>
-          <span class="bg-amber-950/60 text-amber-400 border border-amber-800/40 text-xs px-3 py-1 rounded-full font-mono">Atwix Cycle Law</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-6 space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-xs">
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-400/90 mb-2">目标国绝嗣上下文参数</h4>
-
-            <div class="grid grid-cols-2 gap-3.5">
-              <div>
-                <label class="block text-slate-400 mb-1">君主去世年份 (Year: 1444–1821)</label>
-                <input type="number" id="pu-year" value="1500" min="1444" max="1821" oninput="calcPU()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">君主去世日期序号 (Day: 1–365)</label>
-                <input type="number" id="pu-day" value="180" min="1" max="365" oninput="calcPU()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">目标国首都省份 ID (Province ID)</label>
-                <input type="number" id="pu-prov-id" value="183" min="1" max="5000" oninput="calcPU()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-                <span class="text-[10px] text-slate-500">巴黎:183 / 伦敦:236 / 维也纳:134</span>
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">目标国总发展度 (Total Dev)</label>
-                <input type="number" id="pu-dev" value="250" min="3" max="4000" oninput="calcPU()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">主张国外交声誉 (Diplomatic Rep)</label>
-                <input type="number" id="pu-diprep" value="4" min="-5" max="15" oninput="calcPU()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">目标国拥有省份数量 (Provinces)</label>
-                <input type="number" id="pu-provinces" value="12" min="1" max="300" oninput="calcPU()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-            </div>
-          </div>
-
-          <div class="lg:col-span-6 space-y-4">
-            <div class="bg-slate-950/80 border border-amber-500/30 rounded-xl p-4 space-y-4">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-400">周期内部哈希值 (Cycle Step)</span>
-                <span class="text-lg font-mono font-bold text-amber-300" id="pu-hash-val">Step 54 / 100</span>
-              </div>
-
-              <div id="pu-phase-result-box" class="p-4 rounded-xl border bg-slate-900 space-y-2"></div>
-
-              <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
-                <div>
-                  <div class="text-slate-300 font-medium">直接继承全境概率 (Direct Inheritance)</div>
-                  <div class="text-[10px] text-slate-500">5 × DipRep + Stab + 5 - Provinces</div>
-                </div>
-                <div class="text-xl font-bold font-mono text-emerald-400" id="pu-inherit-chance">18.0%</div>
-              </div>
-            </div>
-
-            <div class="bg-slate-950/40 border border-slate-800 rounded-xl p-3.5 text-xs space-y-2">
-              <div class="font-semibold text-amber-300 flex items-center gap-1.5">
-                <i class="fa-solid fa-sitemap"></i> 继承战争发起挑战方（Attacker）仲裁优先级
-              </div>
-              <ol class="list-decimal list-inside text-slate-400 space-y-1 text-[11px]">
-                <li><strong class="text-slate-200">最大宿敌 (Rival):</strong> 防守方最高陆军实力的宿敌国；</li>
-                <li><strong class="text-slate-200">同王朝联姻国 (Dynasty RM):</strong> 共享同宗族血脉且军力最高的联姻国；</li>
-                <li><strong class="text-slate-200">最高军力联姻国 (Royal Marriage):</strong> 其他已建立联姻的强权。</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SIMULATOR 4: AGGRESSIVE EXPANSION -->
-      <div id="sim-ae" class="sim-panel hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
-              <i class="fa-solid fa-users-viewfinder text-rose-400"></i> 侵略扩张 (AE) 扩散与反国家包围网预警测算器
-            </h3>
-            <p class="text-xs text-slate-400 mt-1">计算单次割地在宗教、文化、神罗属性与地理距离衰减下的全欧 AE 传播峰值与消退年限。</p>
-          </div>
-          <span class="bg-rose-950/60 text-rose-400 border border-rose-800/40 text-xs px-3 py-1 rounded-full font-mono">Coalition: AE ≥ 50</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-6 space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-xs">
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-400/90 mb-2">和约割地条件配置</h4>
-
-            <div class="grid grid-cols-2 gap-3.5">
-              <div>
-                <label class="block text-slate-400 mb-1">割让省份基础总发展度 (Base Dev)</label>
-                <input type="number" id="ae-dev" value="30" min="1" max="500" oninput="calcAE()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-
-              <div>
-                <label class="block text-slate-400 mb-1">宣战借口类型 (CB Type)</label>
-                <select id="ae-cb" onchange="calcAE()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-                  <option value="1.0">征服宣称 (Conquest 100%)</option>
-                  <option value="0.75">圣战 / 纯洁之战 (Holy War 75%)</option>
-                  <option value="0.75">帝国主义 (Imperialism 75%)</option>
-                  <option value="0.5">破门绝罚 (Excommunication 50%)</option>
-                  <option value="1.5">无借口宣战 (No CB 150%)</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-slate-400 mb-1">自身 AE 影响减免 (AE Impact %)</label>
-                <input type="number" id="ae-reduction" value="20" min="0" max="80" oninput="calcAE()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-
-              <div>
-                <label class="block text-slate-400 mb-1">外交互动改善关系 (Improve Relations %)</label>
-                <input type="number" id="ae-improve-rel" value="40" min="0" max="200" oninput="calcAE()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-            </div>
-
-            <div class="space-y-2 pt-2 border-t border-slate-800 text-slate-300">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="ae-chk-same-religion" checked onchange="calcAE()" class="rounded bg-slate-900 border-slate-700 text-amber-500">
-                <span>周边观察国与受害国为同一种具体宗教 (+50% AE)</span>
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="ae-chk-same-culture" checked onchange="calcAE()" class="rounded bg-slate-900 border-slate-700 text-amber-500">
-                <span>周边观察国与被割省份为同文化组 (+25% AE)</span>
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="ae-chk-hre-province" checked onchange="calcAE()" class="rounded bg-slate-900 border-slate-700 text-amber-500">
-                <span>被割让省份属于神圣罗马帝国帝国领地 (+50% AE)</span>
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="ae-chk-hre-member" checked onchange="calcAE()" class="rounded bg-slate-900 border-slate-700 text-amber-500">
-                <span>吞并方属于神罗成员国内斗 (+50% AE)</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="lg:col-span-6 space-y-4">
-            <div class="bg-slate-950/80 border border-amber-500/30 rounded-xl p-4 space-y-3">
-              <h4 class="text-xs font-semibold text-amber-300 flex items-center justify-between">
-                <span>侵略扩张测算结果</span>
-                <span class="text-slate-400 font-mono text-[10px]">Coalition Threshold: 50.0</span>
-              </h4>
-
-              <div class="grid grid-cols-2 gap-3 pt-1">
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">对直接邻近核心国产生 AE</div>
-                  <div class="text-2xl font-bold font-mono text-rose-400 mt-1" id="out-ae-peak">56.7</div>
-                  <div class="text-[10px] text-rose-400/80 mt-0.5" id="out-ae-coalition-status">⚠️ 触发包围网阈值</div>
-                </div>
-
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">年化 AE 自然衰减速率</div>
-                  <div class="text-xl font-bold font-mono text-emerald-400 mt-1" id="out-ae-decay-rate">2.80 / 年</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5">基准 2.0 × (1 + 改善关系)</div>
-                </div>
-
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 col-span-2">
-                  <div class="text-[11px] text-slate-400">包围网安全消退所需等待时间 (Safe Cooldown)</div>
-                  <div class="text-xl font-bold font-mono text-amber-300 mt-1" id="out-ae-years-needed">20.25 年</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5">在此期间若同时有 ≥4 个无停战负好感国家 AE ≥ 50，包围网将立即成立</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="p-3 rounded-xl bg-slate-950/40 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-              <div class="text-amber-400 font-medium flex items-center gap-1">
-                <i class="fa-solid fa-shield-halved"></i> 破包围网技巧
-              </div>
-              <p>在和约签订前将改善关系拉至对目标好感度 &gt; 0，或利用停战协议（Truce）时间差轮流宣战，卡死“至少4国同时无停战”的包围网硬编码启动条件。</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SIMULATOR 5: TRADE STEERING -->
-      <div id="sim-trade" class="sim-panel hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
-              <i class="fa-solid fa-ship text-emerald-400"></i> 贸易接力引流与复利增殖乘数模型 (Trade Steering Compounding)
-            </h3>
-            <p class="text-xs text-slate-400 mt-1">模拟贸易额自上游生产国沿贸易链条向下游接力引流时，商人团提供的指数级复利增殖加成。</p>
-          </div>
-          <span class="bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-xs px-3 py-1 rounded-full font-mono">Compounding Boost</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-6 space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-xs">
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-400/90 mb-2">贸易网络输入配置</h4>
-
-            <div class="grid grid-cols-2 gap-3.5">
-              <div>
-                <label class="block text-slate-400 mb-1">上游本节点本地产出贸易额 (Ducats)</label>
-                <input type="number" id="trade-local-val" value="20" min="1" max="500" oninput="calcTrade()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">更上游流入贸易额 (Incoming)</label>
-                <input type="number" id="trade-incoming-val" value="10" min="0" max="500" oninput="calcTrade()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">己方贸易力量占比 (Trade Power %)</label>
-                <input type="number" id="trade-power-share" value="70" min="1" max="100" oninput="calcTrade()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">下引路线商人总数 (Merchants Steering)</label>
-                <input type="number" id="trade-merchants" value="4" min="1" max="8" oninput="calcTrade()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">贸易引流效率加成 (Trade Steering %)</label>
-                <input type="number" id="trade-steering-mod" value="50" min="0" max="200" oninput="calcTrade()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">本国贸易效率 (Trade Efficiency %)</label>
-                <input type="number" id="trade-efficiency" value="30" min="0" max="150" oninput="calcTrade()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-            </div>
-          </div>
-
-          <div class="lg:col-span-6 space-y-4">
-            <div class="bg-slate-950/80 border border-amber-500/30 rounded-xl p-4 space-y-3">
-              <h4 class="text-xs font-semibold text-amber-300 flex items-center justify-between">
-                <span>流向分流与增殖结果</span>
-                <span class="text-slate-400 font-mono text-[10px]">Monthly Cash Flow</span>
-              </h4>
-
-              <div class="grid grid-cols-2 gap-3 pt-1">
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">单节点引流复利乘数</div>
-                  <div class="text-2xl font-bold font-mono text-emerald-400 mt-1" id="out-trade-multiplier">1.335×</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5">4 名商人接力复利加成</div>
-                </div>
-
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">流向下游的总贸易额</div>
-                  <div class="text-2xl font-bold font-mono text-cyan-400 mt-1" id="out-trade-outgoing">28.04 ¤</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5">无中生有增殖 +7.04 ¤</div>
-                </div>
-
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 col-span-2">
-                  <div class="text-[11px] text-slate-400">若在此节点就地提取获得月现金 (Collected)</div>
-                  <div class="text-xl font-bold font-mono text-amber-300 mt-1" id="out-trade-collected">27.30 ¤ / 月</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5">含 30% 贸易效率加成</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="p-3 rounded-xl bg-slate-950/40 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-              <div class="text-amber-400 font-medium flex items-center gap-1">
-                <i class="fa-solid fa-coins"></i> 终点节点（End Node）暴利逻辑
-              </div>
-              <p>全图三大终点节点（热那亚、威尼斯、英吉利海峡）没有流出通道。控制终点节点并串联 5–6 个上游节点连续 Steering，贸易额将在终端产生 300%–500% 的指数级膨胀！</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SIMULATOR 6: AI DECISION -->
-      <div id="sim-ai" class="sim-panel hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
-              <i class="fa-solid fa-robot text-blue-400"></i> AI 外交结盟与宣战意愿算分矩阵 (AI Diplomacy & War Desirability)
-            </h3>
-            <p class="text-xs text-slate-400 mt-1">模拟 EU4 底层 AI 在面对玩家外交提案或寻找宣战猎物时的确定性算分模型。</p>
-          </div>
-          <span class="bg-blue-950/60 text-blue-400 border border-blue-800/40 text-xs px-3 py-1 rounded-full font-mono">Score &gt; 0 to Accept</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-6 space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-xs">
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-400/90 mb-2">外交结盟与宣战变量配置</h4>
-
-            <div class="grid grid-cols-2 gap-3.5">
-              <div>
-                <label class="block text-slate-400 mb-1">玩家外交声誉 (Dip Rep: +5分/点)</label>
-                <input type="number" id="ai-diprep" value="3" min="-5" max="10" oninput="calcAI()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">对玩家信任度 (Trust: 0–100)</label>
-                <input type="number" id="ai-trust" value="65" min="0" max="100" oninput="calcAI()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">AI 对玩家态度 (Attitude)</label>
-                <select id="ai-attitude" onchange="calcAI()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-                  <option value="10">友好 (Friendly: +10)</option>
-                  <option value="20">受威胁 (Threatened: +20)</option>
-                  <option value="-20">中立 (Neutral: -20)</option>
-                  <option value="-1000">宿敌 / 被激怒 (Rival/Outraged: -1000)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">相对陆军实力比例 (Your Army / AI)</label>
-                <input type="number" id="ai-army-ratio" value="1.2" step="0.1" min="0.1" max="5.0" oninput="calcAI()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">对玩家累积 AE (AE Penalty: -1分/点)</label>
-                <input type="number" id="ai-ae" value="15" min="0" max="150" oninput="calcAI()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-              <div>
-                <label class="block text-slate-400 mb-1">边境距离惩罚 (Distance Penalty)</label>
-                <input type="number" id="ai-distance" value="-10" min="-50" max="0" oninput="calcAI()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-              </div>
-            </div>
-          </div>
-
-          <div class="lg:col-span-6 space-y-4">
-            <div class="bg-slate-950/80 border border-amber-500/30 rounded-xl p-4 space-y-3">
-              <h4 class="text-xs font-semibold text-amber-300 flex items-center justify-between">
-                <span>AI 结盟接受意愿计算</span>
-                <span class="text-slate-400 font-mono text-[10px]">Accept if &gt; 0</span>
-              </h4>
-
-              <div class="grid grid-cols-2 gap-3 pt-1">
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">综合结盟赞成得分</div>
-                  <div class="text-2xl font-bold font-mono text-emerald-400 mt-1" id="out-ai-alliance-score">+24</div>
-                  <div class="text-[10px] text-emerald-400 mt-0.5" id="out-ai-alliance-status">✅ AI 同意建立同盟</div>
-                </div>
-
-                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                  <div class="text-[11px] text-slate-400">对玩家宣战渴望度 (War Desirability)</div>
-                  <div class="text-2xl font-bold font-mono text-blue-400 mt-1" id="out-ai-war-score">-35</div>
-                  <div class="text-[10px] text-slate-400 mt-0.5">阈值 100 触发宣战</div>
-                </div>
-              </div>
-
-              <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 text-[11px] space-y-1.5 font-mono text-slate-300" id="ai-score-breakdown"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- TAB 3: HISTORICAL ARCHETYPES MATRIX VIEW -->
-    <div id="view-matrix" class="hidden space-y-6">
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+    <!-- SECTION 1: INDUSTRY ANALYSIS & REVERSE-ENGINEERING -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
-          <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
-            <i class="fa-solid fa-chess-rook text-amber-400"></i> 近代早期（1444–1821）历史原型与游戏机制映射全景矩阵
+          <h3 class="text-lg font-bold font-serif text-brand-gold flex items-center gap-2">
+            <i class="fa-solid fa-microchip text-amber-400"></i> 模块一：行业经典策略游戏底层逆向与机制解构
           </h3>
-          <p class="text-xs text-slate-400 mt-1">深度解析 Paradox Interactive 主设计师团队如何将近世欧洲的均势外交、价格革命、沃邦筑城法与殖民资本主义抽象为精密的数值算法。</p>
+          <p class="text-xs text-slate-400 mt-0.5">深度剖析 P社 Clausewitz 引擎、文明系列 4X 算法及社区经典冷兵器大型 MOD。</p>
+        </div>
+        <span class="text-xs font-mono text-slate-500">Analysis & Reverse-Engineering</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        
+        <!-- CARD 1: EU4 -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 hover:border-cyan-500/50 transition-all flex flex-col justify-between group shadow-xl">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800/40 font-mono">Paradox / EU4</span>
+              <span class="text-slate-500 font-mono">1444–1821</span>
+            </div>
+            <h4 class="text-base font-bold text-slate-100 group-hover:text-cyan-300 transition-colors flex items-center gap-2">
+              <i class="fa-solid fa-crown text-cyan-400"></i> 《欧陆风云4》底层算法与 6 大交互沙盘
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              涵盖 21 项核心机制 LaTeX 公式、陆战士气/伤亡双轨演算、围城马尔可夫链、Atwix 75/20/5 同君联合周期、包围网 AE 衰减与历史制度映射。
+            </p>
+          </div>
+          <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <span class="text-[11px] font-mono text-slate-500">含 6 大实时模拟器</span>
+            <a href="analysis/eu4/index.html" class="px-3.5 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 text-xs font-semibold flex items-center gap-1.5 transition-all">
+              进入系统 <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr class="border-b border-slate-800 bg-slate-950 text-slate-300 font-semibold">
-                <th class="py-3 px-4">游戏核心机制</th>
-                <th class="py-3 px-4">历史原型与重大事件</th>
-                <th class="py-3 px-4">对应历史时代</th>
-                <th class="py-3 px-4">真实历史运作逻辑</th>
-                <th class="py-3 px-4">P 社数值抽象方法</th>
-              </tr>
-            </thead>
-            <tbody id="matrix-table-body" class="divide-y divide-slate-800/60 text-slate-400">
-              <!-- Injected via JS -->
-            </tbody>
-          </table>
+        <!-- CARD 2: EARLY GAME META -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 hover:border-amber-500/50 transition-all flex flex-col justify-between group shadow-xl">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-800/40 font-mono">5-Era Grand Comparison</span>
+              <span class="text-slate-500 font-mono">Early-Game Meta</span>
+            </div>
+            <h4 class="text-base font-bold text-slate-100 group-hover:text-amber-300 transition-colors flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-amber-400"></i> 前 30 天/回合 玩家 vs AI 博弈全景看板
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              文明 VI、EU4 1444、HoI2 1936 以及🇨🇳国内（春秋/三国）与🌍国外（罗马/中世纪）冷兵器 MOD 前 30 节点逐日微操与独立收益解析。
+            </p>
+          </div>
+          <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <span class="text-[11px] font-mono text-slate-500">含 90+ 节点独立收益</span>
+            <a href="analysis/early_game_meta/index.html" class="px-3.5 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition-all">
+              进入看板 <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
         </div>
+
+        <!-- CARD 3: FUTURE EXPANSION -->
+        <div class="bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-5 flex flex-col justify-between text-slate-500">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">Planning / In Pipeline</span>
+              <span class="text-slate-600 font-mono">Future</span>
+            </div>
+            <h4 class="text-base font-bold text-slate-400 flex items-center gap-2">
+              <i class="fa-solid fa-compass-drafting"></i> 待拓展深度逆向分析库
+            </h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              规划中：《维多利亚 3》POPs 职业与动态市场供需算法、《钢铁雄心 4》工业编制与物流补给中继、《十字军之王 3》宗族封建网络。
+            </p>
+          </div>
+          <div class="pt-4 mt-4 border-t border-slate-800/40 text-[11px] font-mono text-slate-600">
+            持续构建与更新中...
+          </div>
+        </div>
+
       </div>
     </div>
 
+    <!-- SECTION 2: ORIGINAL STRATEGY GAME DESIGN WORKBENCH -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-lg font-bold font-serif text-emerald-400 flex items-center gap-2">
+            <i class="fa-solid fa-lightbulb text-emerald-400"></i> 模块二：自研策略类游戏方案、策划案与架构设计工坊
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">标准化设计文档（GDD）、模块化底层机制规范、在线原型演练与历史原型灵感库。</p>
+        </div>
+        <span class="text-xs font-mono text-slate-500">Original Game Designs</span>
+      </div>
 
-    <!-- TAB 4: JSON RAW EXPLORER & EXPORT VIEW -->
-    <div id="view-json" class="hidden space-y-6">
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h3 class="text-lg font-bold text-amber-300 font-serif flex items-center gap-2">
-              <i class="fa-solid fa-code text-cyan-400"></i> 结构化 JSON 数据检视与一键导出
-            </h3>
-            <p class="text-xs text-slate-400 mt-1">包含所有 21 项机制的完整数据定义、LaTeX 公式、关键参数与逆向说明。</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- CARD 1: GDD TEMPLATE -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 hover:border-emerald-500/50 transition-all flex flex-col justify-between group shadow-xl">
+          <div class="space-y-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <i class="fa-solid fa-file-lines"></i>
+            </div>
+            <h4 class="text-sm font-bold text-slate-100 group-hover:text-emerald-300 transition-colors">
+              策略游戏标准 GDD 策划案模板
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              涵盖核心愿景、三大设计支柱、底层时序心跳、军事/经济/外交子系统规范与 AI 有限状态机。
+            </p>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="copyFullJSON()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 border border-slate-700 flex items-center gap-1.5">
-              <i class="fa-regular fa-copy"></i> 复制全部 JSON
-            </button>
-            <button onclick="downloadJSON()" class="px-3.5 py-1.5 rounded-lg bg-brand-gold hover:bg-amber-400 text-xs text-slate-950 font-bold flex items-center gap-1.5">
-              <i class="fa-solid fa-download"></i> 下载 JSON 文件
-            </button>
-          </div>
+          <a href="https://github.com/lizr-arch/StrategyGameDesign/blob/main/original_designs/01_game_design_documents/GDD_TEMPLATE.md" target="_blank" class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400 hover:text-emerald-300 flex items-center justify-between">
+            <span>查看文档模板</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
         </div>
 
-        <div class="relative">
-          <pre id="json-pre" class="w-full max-h-[600px] overflow-auto bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono text-emerald-400 custom-scroll leading-relaxed"></pre>
+        <!-- CARD 2: ARCHITECTURE GUIDE -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 hover:border-emerald-500/50 transition-all flex flex-col justify-between group shadow-xl">
+          <div class="space-y-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <i class="fa-solid fa-cubes"></i>
+            </div>
+            <h4 class="text-sm font-bold text-slate-100 group-hover:text-emerald-300 transition-colors">
+              底层模块化架构设计指南
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              时序心跳调度器（Tick/Pulse）、战役双轨伤害模型、贸易 DAG 有向图与 AI 效用估值架构。
+            </p>
+          </div>
+          <a href="https://github.com/lizr-arch/StrategyGameDesign/blob/main/original_designs/02_mechanics_architecture/modular_systems_guide.md" target="_blank" class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400 hover:text-emerald-300 flex items-center justify-between">
+            <span>查看架构指南</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+
+        <!-- CARD 3: PROTOTYPE SANDBOX -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 hover:border-emerald-500/50 transition-all flex flex-col justify-between group shadow-xl">
+          <div class="space-y-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <i class="fa-solid fa-flask-vial"></i>
+            </div>
+            <h4 class="text-sm font-bold text-slate-100 group-hover:text-emerald-300 transition-colors">
+              机制原型与数值平衡工作台
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              自研战术伤害、士气双轨衰减与地形阻滞实时演算沙盘，可自定义变量并即时观测 10 轮推演输出。
+            </p>
+          </div>
+          <a href="original_designs/03_prototypes_and_tools/index.html" class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400 hover:text-emerald-300 flex items-center justify-between">
+            <span>打开原型沙盘</span> <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+
+        <!-- CARD 4: HISTORICAL ARCHETYPES -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 hover:border-emerald-500/50 transition-all flex flex-col justify-between group shadow-xl">
+          <div class="space-y-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <i class="fa-solid fa-book-atlas"></i>
+            </div>
+            <h4 class="text-sm font-bold text-slate-100 group-hover:text-emerald-300 transition-colors">
+              历史制度原型与机制映射典籍
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              军功爵制、欧洲封建采邑、罗马行省包税、威尼斯海权重商、游牧骑射与朝贡体系转游戏机制分类。
+            </p>
+          </div>
+          <a href="https://github.com/lizr-arch/StrategyGameDesign/blob/main/original_designs/04_historical_archetypes/archetypes_catalog.md" target="_blank" class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400 hover:text-emerald-300 flex items-center justify-between">
+            <span>浏览典籍目录</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECTION 3: METHODOLOGY & PHILOSOPHY -->
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+        <h3 class="text-base font-bold font-serif text-amber-300 flex items-center gap-2">
+          <i class="fa-solid fa-scroll text-amber-400"></i> 策略游戏设计方法论与心流哲学
+        </h3>
+        <a href="https://github.com/lizr-arch/StrategyGameDesign/blob/main/docs/strategy_game_methodology.md" target="_blank" class="text-xs text-amber-400 hover:underline flex items-center gap-1 font-mono">
+          完整方法论文档 <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </a>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
+        <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
+          <div class="font-bold text-amber-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-scale-balanced"></i> 消除唯一绝对解 (No Dominant Strategy)
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            若存在无脑必选的最优解，策略深度即宣告死亡。通过动态克制矩阵与边际效益递减打破垄断解。
+          </p>
+        </div>
+        <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
+          <div class="font-bold text-cyan-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-hourglass-half"></i> 时空摩擦与机会成本 (Spatiotemporal Frictions)
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            调动军团与调集物资必须付出真实的“行军天数”与“补给线损耗”，地理摩擦是大国无脑碾压的最佳屏障。
+          </p>
+        </div>
+        <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
+          <div class="font-bold text-rose-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-virus"></i> 破解中后期滚雪球 (Preventing Snowball Boredom)
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            引入帝国过度扩张内生危机（阶层撕裂、反霸权联盟、通讯效率惩罚），保持中后期持久博弈张力。
+          </p>
         </div>
       </div>
     </div>
 
   </main>
 
-  <!-- TOAST NOTIFICATION -->
-  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 border border-amber-500 text-amber-300 text-xs px-4 py-2.5 rounded-xl shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
-    <i class="fa-solid fa-circle-check text-emerald-400"></i>
-    <span id="toast-text">已复制到剪贴板</span>
-  </div>
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800 bg-brand-slatebg/90 mt-12 py-6 text-center text-xs text-slate-500 font-mono">
+    <p>Strategy Game Design & Algorithmic Reverse-Engineering Systems · <a href="https://github.com/lizr-arch/StrategyGameDesign" target="_blank" class="text-amber-400 hover:underline">GitHub Repository</a></p>
+  </footer>
 
-  <!-- LOAD DATA AND APPLICATION SCRIPTS -->
-  <script src="data_payload.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>

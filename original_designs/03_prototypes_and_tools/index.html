@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自研策略游戏机制原型与数值平衡工作台 - Strategy Design Lab</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: "#d4af37",
+              goldlight: "#f5d77f",
+              emerald: "#10b981",
+              crimson: "#881337",
+              slatebg: "#090d16",
+              cardbg: "#111827",
+              cardborder: "#1f2937"
+            }
+          },
+          fontFamily: {
+            serif: ["Cinzel", "Georgia", "serif"],
+            sans: ["Inter", "system-ui", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #151e30 0%, #090d16 75%, #05070b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-brand-gold selection:text-black">
+
+  <!-- HEADER -->
+  <header class="border-b border-brand-cardborder bg-brand-slatebg/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-amber-500 p-0.5 shadow-lg flex items-center justify-center">
+          <div class="w-full h-full bg-brand-slatebg rounded-[7px] flex items-center justify-center">
+            <i class="fa-solid fa-flask-vial text-emerald-400 text-lg"></i>
+          </div>
+        </div>
+        <div>
+          <h1 class="font-serif text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-brand-gold to-amber-200">
+            自研策略游戏机制原型与数值平衡工作台
+          </h1>
+          <p class="text-xs text-slate-400 font-mono">Original Strategy Game Mechanics Prototyping & Balance Workbench</p>
+        </div>
+      </div>
+      <a href="../../index.html" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 border border-amber-500/30 transition-colors">
+        <i class="fa-solid fa-house"></i> 返回仓库总站
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-2">
+      <h2 class="text-sm font-bold text-amber-300 font-serif flex items-center gap-2">
+        <i class="fa-solid fa-calculator text-amber-400"></i> 原创战术伤害与士气双轨衰减验证沙盘 (Combat Prototype)
+      </h2>
+      <p class="text-xs text-slate-400">
+        调整攻击力、防御力、兵力规模与掷骰方差，实时演算 10 轮交战中的兵力损伤与士气崩溃曲线，验证战斗公式平滑度。
+      </p>
+    </div>
+
+    <!-- Interactive Prototype Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Controls Panel -->
+      <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 text-xs">
+        <div class="font-bold text-slate-200 border-b border-slate-800 pb-2">🎮 自研参数控制器 (Custom Variables)</div>
+
+        <div class="space-y-3 font-mono">
+          <div>
+            <div class="flex justify-between text-slate-300">
+              <span>进攻方攻击力 (Attacker Atk):</span>
+              <span id="disp-atk" class="text-amber-400 font-bold">12</span>
+            </div>
+            <input type="range" min="1" max="30" value="12" id="input-atk" oninput="runSim()" class="w-full h-2 bg-slate-950 rounded-lg accent-amber-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-slate-300">
+              <span>防守方防御力 (Defender Def):</span>
+              <span id="disp-def" class="text-cyan-400 font-bold">8</span>
+            </div>
+            <input type="range" min="1" max="30" value="8" id="input-def" oninput="runSim()" class="w-full h-2 bg-slate-950 rounded-lg accent-cyan-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-slate-300">
+              <span>进攻方兵力 (Attacker Troops):</span>
+              <span id="disp-atroops" class="text-emerald-400 font-bold">10000</span>
+            </div>
+            <input type="range" min="1000" max="30000" step="1000" value="10000" id="input-atroops" oninput="runSim()" class="w-full h-2 bg-slate-950 rounded-lg accent-emerald-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-slate-300">
+              <span>防守方兵力 (Defender Troops):</span>
+              <span id="disp-dtroops" class="text-rose-400 font-bold">8000</span>
+            </div>
+            <input type="range" min="1000" max="30000" step="1000" value="8000" id="input-dtroops" oninput="runSim()" class="w-full h-2 bg-slate-950 rounded-lg accent-rose-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-slate-300">
+              <span>地形阻滞系数 (Terrain Penalty):</span>
+              <span id="disp-terrain" class="text-purple-400 font-bold">0%</span>
+            </div>
+            <input type="range" min="0" max="50" step="5" value="0" id="input-terrain" oninput="runSim()" class="w-full h-2 bg-slate-950 rounded-lg accent-purple-500">
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 text-[11px] text-slate-400 leading-relaxed font-sans">
+          <strong>公式原型：</strong> <br>
+          <code class="text-amber-300">Damage = Base(15) * (Atk / Def)^1.2 * (Troops / 1000) * (1 - Terrain)</code>
+        </div>
+      </div>
+
+      <!-- Chart Display -->
+      <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-slate-200">📊 10 轮战役推演输出曲线 (Casualties & Morale Loss)</h3>
+          <span id="battle-winner-badge" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            推演中...
+          </span>
+        </div>
+        <div class="relative h-[280px]">
+          <canvas id="simChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    let simChartInstance = null;
+
+    function runSim() {
+      const atk = parseFloat(document.getElementById("input-atk").value);
+      const def = parseFloat(document.getElementById("input-def").value);
+      let aTroops = parseFloat(document.getElementById("input-atroops").value);
+      let dTroops = parseFloat(document.getElementById("input-dtroops").value);
+      const terrain = parseFloat(document.getElementById("input-terrain").value) / 100.0;
+
+      document.getElementById("disp-atk").innerText = atk;
+      document.getElementById("disp-def").innerText = def;
+      document.getElementById("disp-atroops").innerText = aTroops;
+      document.getElementById("disp-dtroops").innerText = dTroops;
+      document.getElementById("disp-terrain").innerText = (terrain * 100).toFixed(0) + "%";
+
+      let aMorale = 4.0;
+      let dMorale = 4.0;
+
+      const aTroopHist = [aTroops];
+      const dTroopHist = [dTroops];
+
+      for (let r = 1; r <= 10; r++) {
+        if (aTroops <= 0 || dTroops <= 0 || aMorale <= 0 || dMorale <= 0) {
+          aTroopHist.push(Math.max(0, aTroops));
+          dTroopHist.push(Math.max(0, dTroops));
+          continue;
+        }
+
+        const aDmg = Math.round(15 * Math.pow(atk / def, 1.2) * (aTroops / 2000.0) * (1 - terrain) + Math.random() * 50);
+        const dDmg = Math.round(15 * Math.pow(def / atk, 1.2) * (dTroops / 2000.0) + Math.random() * 50);
+
+        dTroops = Math.max(0, dTroops - aDmg);
+        aTroops = Math.max(0, aTroops - dDmg);
+
+        dMorale -= (aDmg / (dTroops + 1)) * 1.5;
+        aMorale -= (dDmg / (aTroops + 1)) * 1.5;
+
+        aTroopHist.push(aTroops);
+        dTroopHist.push(dTroops);
+      }
+
+      const winnerBadge = document.getElementById("battle-winner-badge");
+      if (aTroops > dTroops) {
+        winnerBadge.innerText = "🏆 进攻方胜出 (歼敌 " + (dTroopHist[0] - dTroops) + " 人)";
+        winnerBadge.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40";
+      } else {
+        winnerBadge.innerText = "🛡️ 防守方胜出 (抵御成功)";
+        winnerBadge.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40";
+      }
+
+      renderSimChart(aTroopHist, dTroopHist);
+    }
+
+    function renderSimChart(aHist, dHist) {
+      const ctx = document.getElementById("simChart").getContext("2d");
+      if (simChartInstance) {
+        simChartInstance.destroy();
+      }
+
+      simChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: ["第0轮", "第1轮", "第2轮", "第3轮", "第4轮", "第5轮", "第6轮", "第7轮", "第8轮", "第9轮", "第10轮"],
+          datasets: [
+            {
+              label: "进攻方存活兵力",
+              data: aHist,
+              borderColor: "#d4af37",
+              backgroundColor: "rgba(212, 175, 55, 0.2)",
+              fill: false,
+              tension: 0.3
+            },
+            {
+              label: "防守方存活兵力",
+              data: dHist,
+              borderColor: "#06b6d4",
+              backgroundColor: "rgba(6, 182, 212, 0.2)",
+              fill: false,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: "#1f2937" }, ticks: { color: "#94a3b8" } },
+            y: { grid: { color: "#1f2937" }, ticks: { color: "#94a3b8" } }
+          },
+          plugins: {
+            legend: { labels: { color: "#cbd5e1", font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      runSim();
+    });
+  </script>
+</body>
+</html>

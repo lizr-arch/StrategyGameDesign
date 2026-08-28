@@ -1,66 +1,81 @@
-# Strategy Game Design & Algorithmic Reverse-Engineering Systems
-### 大战略与 4X 策略游戏底层机制、算法逆向与历史映射全景沙盘系统
+# Strategy Game Design & Algorithmic Reverse-Engineering Hub
+### 大战略与 4X 策略游戏底层机制逆向、历史制度映射与自研设计架构中心
 
-本项目收录并逆向解析了经典历史大战略游戏（Grand Strategy）与 4X 回合制策略游戏的底层数学模型、AI 决策树机制以及前 30 回合/天（Early-Game Meta）的人类高玩 vs AI 博弈模型。
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Demo-brightgreen?style=flat-square&logo=github)](https://lizr-arch.github.io/StrategyGameDesign/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
----
-
-## 🌟 核心模块与系统架构
-
-### 1. 《欧陆风云4》（EU4 / Clausewitz Engine）核心底层算法系统
-- **主入口**：[index.html](./index.html)
-- **核心数据源**：[u4_mechanisms_data.json](./eu4_mechanisms_data.json)（21 项完整机制数据库）
-- **功能特性**：
-  - **21 项核心算法全景库**：涵盖陆战震慑/射击伤害解析式、围城马尔可夫链、Atwix 75/20/5 同君联合（PU）周期、包围网 AE 衰减、贸易转向乘数复利、阶层特权、宣战结盟意愿算分等。
-  - **6 大实时交互演算沙盘**：
-    1. ⚔️ 陆战伤亡与士气损伤双轨实时模拟器
-    2. 🏰 围城进度与马尔可夫状态转移概率沙盘
-    3. 👑 Atwix 继承周期与同君联合状态机查询器
-    4. ⚠️ AE 侵略扩张与神罗/宗教包围网风险测算器
-    5. 💰 贸易流向复利与 Steering 引流转向计算器
-    6. 🤖 AI 外交宣战与防御同盟接受度得分演算器
-  - **历史机制映射矩阵**：近代早期（1444–1821）欧洲与世界历史制度（雇佣军常备军转型、威斯特伐利亚主权体系、重商主义、民族国家）与代码算法的一一映射。
+本项目是一个专注于**深度策略游戏（Grand Strategy / 4X / Turn-based Tactics）底层机制逆向、算法数学建模、前 30 回合/天博弈分析以及原创策略游戏方案与架构设计**的综合性开源知识库与工程中枢。
 
 ---
 
-### 2. 宏观跨时代大战略前 30 天/回合 玩家 vs AI 逐日微操与收益全景看板
-- **主入口**：[irst_30_turns_comparison.html](./first_30_turns_comparison.html)
-- **收录体系与模块**：
-  1. 🏛️ **《文明 VI / V》**：Turn 1 – Turn 30 远古创世、地块锁定、抢首发使节、防蛮族回营、万神殿《宗教移民》与二城防突袭。
-  2. 👑 **《欧陆风云 4 原版》**：1444.11.11 至 1444.12.11 停战解禁日，Day 1 阶层榨点、关要塞、1% 低息市民贷、自由佣兵团早战破局。
-  3. 🏭 **《钢铁雄心 2 / 决战》**：1936.1.1 至 1936.1.30，政治滑条调整、拉满消费品消不满至 0%、连续造工厂序列（IC Whore）、科技专精匹配。
-  4. 🇨🇳 **【国内冷兵器 MOD】（春秋战国 / 汉风华夏 / 三国群雄）**：东周（BC 770）与三国（AD 184），法家变法均田、车战转骑弩破甲、水利运粮长协、离间计、断水绝粮破都邑与中原霸主会盟。
-  5. 🌍 **【国外冷兵器 MOD】（Imperium Universalis / MEIOU & Taxes 3.0）**：古典罗马波斯（BC 559）与中世纪封建（AD 1356），纯冲击伤害（火力=0）、地中海谷物海运命脉、通讯效率（CE）分封采邑群、掳掠战俘充银矿奴隶与冬歇撤军。
-  6. 📊 **全时序五大领域堆叠面积图与六维博弈能力雷达图**。
-  7. 🌟 **独立操作收益与底层数值机制解析专栏**：逐行量化每一天微操的数学收益与战略复利。
+## 🌐 在线体验与实时演算沙盘 (Live Demos)
+
+- 🌟 **[策略游戏设计与分析统一门户总站 (Portal Hub)](https://lizr-arch.github.io/StrategyGameDesign/)**
+- 👑 **[《欧陆风云4》（EU4）底层算法全景库与 6 大交互演算沙盘](https://lizr-arch.github.io/StrategyGameDesign/analysis/eu4/index.html)**
+- ⚔️ **[跨时代大战略前 30 天/回合 玩家 vs AI 博弈 & 冷兵器 MOD 全景看板](https://lizr-arch.github.io/StrategyGameDesign/analysis/early_game_meta/index.html)**
+- 🧪 **[自研策略游戏战术伤害与士气双轨衰减原型工作台](https://lizr-arch.github.io/StrategyGameDesign/original_designs/03_prototypes_and_tools/index.html)**
 
 ---
 
-## 🛠️ 文件目录结构
+## 📂 仓库模块与目录结构
 
-`ash
-├── index.html                       # EU4 底层算法与 6 大交互沙盘主单页
-├── first_30_turns_comparison.html    # 三大游戏 + 冷兵器MOD 前 30 天/回全景对比看板
-├── app.js                           # EU4 交互演算模拟器逻辑脚本
-├── data_payload.js                  # 前端数据载荷脚本
-├── eu4_mechanisms_data.json         # EU4 21 项核心算法全量 JSON 数据库
-├── civ_daily.json                   # 文明 VI 30 回合逐回操作与收益数据
-├── eu4_daily.json                   # EU4 31 天逐日微操与收益数据
-├── hoi2_daily.json                  # HoI2 30 天逐日工业备战数据
-├── china_cold_daily.json            # 国内冷兵器 MOD 30 节点逐日数据
-├── foreign_cold_daily.json          # 国外冷兵器 MOD 30 节点逐日数据
-├── data_tactical.json               # 战术军事类机制数据
-├── data_economy.json                # 经济贸易类机制数据
-├── data_diplomatic.json             # 外交联统类机制数据
-├── data_ai.json                     # AI 决策与行为树数据
-└── README.md                        # 项目说明文档
-`
+```text
+StrategyGameDesign/
+├── index.html                               # 🌟 统一门户总站 / Portal Hub
+├── README.md                                # 📖 仓库总说明文档
+├── .gitignore
+│
+├── analysis/                                # 🔍 行业经典策略游戏深度逆向与机制解构库
+│   ├── eu4/                                 # 《欧陆风云4》（Clausewitz Engine）底层算法与沙盘系统
+│   │   ├── index.html                       # EU4 算法与沙盘单页主站
+│   │   ├── app.js                           # 6 大实时演算模拟器逻辑脚本
+│   │   ├── data_payload.js                  # 前端数据载荷
+│   │   └── data/                            # 21 项完整机制 JSON 数据库
+│   │       ├── eu4_mechanisms_data.json     # 全量机制标准数据库 (LaTeX/伪代码/历史原型)
+│   │       ├── data_tactical.json           # 军事战术类算法
+│   │       ├── data_economy.json            # 经济贸易类算法
+│   │       ├── data_diplomatic.json         # 外交联统类算法
+│   │       └── data_ai.json                 # AI 决策与行为树数据
+│   │
+│   └── early_game_meta/                     # 跨时代前 30 回合/天 玩家vsAI博弈 & 冷兵器MOD看板
+│       ├── index.html                       # 全景看板单页应用
+│       └── data/                            # 逐日/逐回全量数据集 (文明VI/EU4/HoI2/春秋三国/罗马中世纪)
+│           ├── civ_daily.json               # 文明 VI 30 回合数据与独立收益
+│           ├── eu4_daily.json               # EU4 31 天数据与独立收益
+│           ├── hoi2_daily.json              # HoI2 30 天数据与独立收益
+│           ├── china_cold_daily.json        # 🇨🇳 国内冷兵器 MOD 30 节点数据与收益
+│           └── foreign_cold_daily.json      # 🌍 国外冷兵器 MOD 30 节点数据与收益
+│
+├── original_designs/                        # 💡 自研策略游戏方案、GDD 与系统架构设计工坊
+│   ├── README.md                            # 自研设计工作流与设计标准规范
+│   ├── 01_game_design_documents/            # 📄 核心策划案 (GDD)
+│   │   └── GDD_TEMPLATE.md                  # 策略游戏标准化完整策划案模板
+│   ├── 02_mechanics_architecture/           # ⚙️ 核心机制与系统架构深度拆解
+│   │   └── modular_systems_guide.md         # 模块化机制设计指南 (时钟/经济/战斗/AI)
+│   ├── 03_prototypes_and_tools/             # 🧪 交互原型与数值平衡演练沙盘
+│   │   └── index.html                       # 自研机制在线原型与数值平衡工作台
+│   └── 04_historical_archetypes/            # 🏛️ 历史制度原型与机制映射灵感库
+│       └── archetypes_catalog.md            # 经典历史制度转数值机制分类典籍
+│
+└── docs/                                    # 📚 策略游戏设计方法论与理论沉淀
+    └── strategy_game_methodology.md         # 策略游戏核心心流、信息论与博弈论哲学
+```
 
 ---
 
-## 🚀 运行与使用方法
+## 🛠️ 技术栈与设计标准
 
-本项目为**纯前端单页架构**，无需配置任何 Node.js/Python 后端环境，直接在浏览器中打开即可运行：
-1. **双击 index.html**：查看 EU4 核心算法与 6 大沙盘计算器。
-2. **双击 irst_30_turns_comparison.html**：查看全时代 5 大体系前 30 回合对比与冷兵器 MOD 数据。
-3. 两页面间内置了**顶部导航跳转**与**右下角全局悬浮胶囊**，支持双向无缝切换。
+- **前端表现层**：纯原生 HTML5 + Tailwind CSS + FontAwesome 6 + KaTeX (数学公式排版) + Chart.js (交互图表渲染)，零复杂构建依赖，极速即开即用。
+- **数据层**：标准 JSON 格式，严格定义字段结构（`algorithm_definition`, `latex_formula`, `cpp_pseudocode`, `historical_mapping`, `early_game_roi`）。
+- **部署模式**：GitHub Pages 静态托管，自动化无缝部署。
+
+---
+
+## 📜 贡献与演进路线 (Roadmap)
+
+1. [x] 《欧陆风云4》21 项核心底层算法逆向与 6 大实时沙盘构建
+2. [x] 跨时代前 30 回合/天 玩家 vs AI 博弈全景看板（文明/EU4/HoI2/冷兵器MOD）
+3. [x] 仓库重构为大战略设计中枢，建立自研 GDD 模板与模块化架构指南
+4. [ ] 《维多利亚 3》POPs 职业与动态市场供需网络算法逆向
+5. [ ] 《钢铁雄心 4》工业产能分配与前线后勤中继损耗模型逆向
+6. [ ] 自研大战略项目《Project Chronos》第一期 GDD 策划案与原型 Demo
