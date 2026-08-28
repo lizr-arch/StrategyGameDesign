@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>策略游戏事件系统全景百科与设计库 - EU4 · HoI2 · Civ4 · 中国MOD/DLC</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: "#d4af37",
+              goldlight: "#f5d77f",
+              darkgold: "#997b24",
+              crimson: "#881337",
+              emerald: "#10b981",
+              cyan: "#06b6d4",
+              purple: "#a855f7",
+              slatebg: "#090d16",
+              cardbg: "#111827",
+              cardborder: "#1f2937"
+            }
+          },
+          fontFamily: {
+            sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+            serif: ["Cinzel", "Georgia", "Cambria", "serif"],
+            mono: ["JetBrains Mono", "Courier New", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #151e30 0%, #090d16 75%, #05070b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0b0f19; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #2a3449; border-radius: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+    .gold-glow { box-shadow: 0 0 25px -5px rgba(212, 175, 55, 0.25); }
+  </style>
+</head>
+<body class="font-sans antialiased custom-scroll selection:bg-brand-gold selection:text-black">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-brand-cardborder bg-brand-slatebg/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-brand-gold to-rose-600 p-0.5 shadow-lg flex items-center justify-center">
+          <div class="w-full h-full bg-brand-slatebg rounded-[10px] flex items-center justify-center">
+            <i class="fa-solid fa-scroll text-brand-gold text-lg"></i>
+          </div>
+        </div>
+        <div>
+          <h1 class="font-serif text-lg sm:text-xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brand-goldlight via-amber-300 to-amber-100 flex items-center gap-2">
+            策略游戏事件系统全景百科与架构指南
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">EU4 · HoI2 · Civ4 · 中国专题</span>
+          </h1>
+          <p class="text-xs text-slate-400 font-mono">大战略与4X游戏随机事件库、真实历史剧本、系统阈值灾难与任务链体系深度解构</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="resource_military_simulator.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold text-amber-300 border border-amber-500/30 transition-all">
+          <i class="fa-solid fa-sliders"></i> 打开机制模拟器
+        </a>
+        <a href="index.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition-all">
+          <i class="fa-solid fa-house"></i> 返回主站
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO ARCHITECTURE OVERVIEW -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+    <div class="bg-gradient-to-r from-slate-900 via-brand-cardbg to-slate-900 border border-brand-cardborder rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+      <div class="absolute -right-6 -bottom-6 opacity-5 pointer-events-none">
+        <i class="fa-solid fa-dice-d20 text-[200px]"></i>
+      </div>
+      
+      <div class="relative z-10 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono">
+            <i class="fa-solid fa-sitemap"></i> 策略游戏事件体系五维架构分类法 (The 5 Event Paradigms)
+          </div>
+          <span class="text-xs font-mono text-slate-400">收录 40+ 经典代表性事件全解析</span>
+        </div>
+
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-4xl">
+          在经典策略游戏设计中，事件绝非仅有“纯随机”与“写死历史”，而是由 <b>五大核心动力</b> 共同构筑的生态体系：
+        </p>
+
+        <!-- 5 Paradigms Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-1 text-xs">
+          
+          <div class="bg-slate-950/80 border border-cyan-500/30 rounded-xl p-3 space-y-1 hover:border-cyan-400 transition-all">
+            <div class="font-bold text-cyan-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-dice text-cyan-400"></i> 1. 纯随机/脉冲事件
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+              基于 MTTH 或回合/双年脉冲掷骰。打破线性积累，制造意外损益与局部波动（如彗星、矿难、学术突破）。
+            </p>
+          </div>
+
+          <div class="bg-slate-950/80 border border-amber-500/30 rounded-xl p-3 space-y-1 hover:border-amber-400 transition-all">
+            <div class="font-bold text-amber-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-landmark text-amber-400"></i> 2. 真实史实剧本事件
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+              特定历史年代/人物/节点触发。承载历史叙事、大国兴衰与转折（如土木堡之变、西安事变、郑和下西洋）。
+            </p>
+          </div>
+
+          <div class="bg-slate-950/80 border border-rose-500/30 rounded-xl p-3 space-y-1 hover:border-rose-400 transition-all">
+            <div class="font-bold text-rose-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-triangle-exclamation text-rose-400"></i> 3. 系统阈值与灾难事件 ★
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+              底层数值达到极值危机关口时被动/蓄力触发。机制惩罚与挑战闭环（如游牧无备边患、破产、罢工哗变）。
+            </p>
+          </div>
+
+          <div class="bg-slate-950/80 border border-purple-500/30 rounded-xl p-3 space-y-1 hover:border-purple-400 transition-all">
+            <div class="font-bold text-purple-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-handshake-simple text-purple-400"></i> 4. 乒乓博弈交互事件 ★
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+              玩家外交动作推送至目标国抉择，对方反馈回传形成决策回路（如最后通牒割地、王位继承战争、间谍曝光）。
+            </p>
+          </div>
+
+          <div class="bg-slate-950/80 border border-emerald-500/30 rounded-xl p-3 space-y-1 hover:border-emerald-400 transition-all">
+            <div class="font-bold text-emerald-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-list-check text-emerald-400"></i> 5. 史诗任务与连锁链 ★
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+              文明4独创机制。触发多回合长线目标，达成特定条件后给予全国性永久晋升与战略重赏（如圣山朝圣、驯马试炼）。
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTROLS & FILTER BAR -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Source Filter Tabs -->
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <span class="text-xs font-mono text-slate-400 mr-1">游戏维度:</span>
+        <button onclick="filterSource('all')" id="tab-all" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-black shadow transition-all">
+          🌐 全部作品
+        </button>
+        <button onclick="filterSource('eu4')" id="tab-eu4" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-950 border border-slate-800 transition-all">
+          👑 欧陆风云 4 (EU4)
+        </button>
+        <button onclick="filterSource('hoi2')" id="tab-hoi2" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-950 border border-slate-800 transition-all">
+          ⚙️ 钢铁雄心 2 (HoI2)
+        </button>
+        <button onclick="filterSource('civ4')" id="tab-civ4" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-950 border border-slate-800 transition-all">
+          🏛️ 文明 4: 刀锋侧影 (Civ4:BtS)
+        </button>
+        <button onclick="filterSource('china')" id="tab-china" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-950 border border-slate-800 transition-all">
+          🐉 中国题材专题 (DLC/MOD)
+        </button>
+      </div>
+
+      <!-- Type Category Filter & Search -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <select id="category-select" onchange="filterCategory()" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-500">
+          <option value="all">全部分类架构 (5大类型)</option>
+          <option value="random">1. 纯随机 / 脉冲事件</option>
+          <option value="historical">2. 真实史实剧本事件</option>
+          <option value="threshold">3. 系统阈值 / 灾难危机事件</option>
+          <option value="interactive">4. 乒乓博弈 / 外交交互事件</option>
+          <option value="quest">5. 史诗任务 / 阶段连锁事件链</option>
+        </select>
+
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+          <input type="text" id="search-input" oninput="onSearchInput()" placeholder="搜索事件名称、机制、关键词..." class="bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:border-amber-500 w-56">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COMPARISON & DECONSTRUCTION SECTION (CIV4 VS EU4 VS HOI2) -->
+    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-sm sm:text-base font-bold font-serif text-brand-gold flex items-center gap-2">
+            <i class="fa-solid fa-scale-balanced text-amber-400"></i> 三大经典策略游戏底层事件机制差异对照矩阵
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">剖析 Paradox 引擎与席德·梅尔文明 4 在事件调度、触发频率与决策深度上的本质区别</p>
+        </div>
+        <span class="text-xs font-mono text-slate-500">Comparative Architecture</span>
+      </div>
+
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left text-xs font-sans">
+          <thead>
+            <tr class="bg-slate-950/80 text-slate-400 font-mono border-b border-slate-800">
+              <th class="py-2.5 px-3">游戏作品 / 引擎</th>
+              <th class="py-2.5 px-3">核心触发引擎 (Trigger Engine)</th>
+              <th class="py-2.5 px-3">事件类型分布</th>
+              <th class="py-2.5 px-3">玩家选择与资源权衡</th>
+              <th class="py-2.5 px-3">独有特色机制</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono text-[11px] text-slate-300">
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-3 font-bold text-cyan-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-crown text-cyan-400"></i> 欧陆风云 4 (EU4)
+              </td>
+              <td class="py-3 px-3">双年脉冲 (2-Year Pulse) + MTTH (平均发生月数) + 阶层状态机</td>
+              <td class="py-3 px-3">纯随机 (40%)、历史剧本 (30%)、灾难危机 (20%)、外交互动 (10%)</td>
+              <td class="py-3 px-3 text-amber-300">君主三色点数、稳定度、阶层忠诚/影响力、合法性/正统</td>
+              <td class="py-3 px-3 text-slate-400">国家大灾难 (Disaster Progress) 蓄力槽、彗星梗</td>
+            </tr>
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-3 font-bold text-orange-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-gear text-orange-400"></i> 钢铁雄心 2 (HoI2)
+              </td>
+              <td class="py-3 px-3">逐日心跳 (Daily Tick) + 政治滑条状态 + 历史日期触发器</td>
+              <td class="py-3 px-3">历史剧本 (60%)、滑条/工业波动 (25%)、科技突破 (15%)</td>
+              <td class="py-3 px-3 text-amber-300">工业值 (IC)、国民不满度 (Dissent)、战略物资、滑条推移</td>
+              <td class="py-3 px-3 text-slate-400">全民族抗战/同盟条约连锁国策事件、阵营倒戈</td>
+            </tr>
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-3 font-bold text-emerald-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-mountain-sun text-emerald-400"></i> 文明 4: 刀锋侧影 (Civ4:BtS)
+              </td>
+              <td class="py-3 px-3">逐回合概率掷骰 (Turn-based % Roll) + 科技/地块/建筑前置</td>
+              <td class="py-3 px-3">地质/自然 (35%)、长线任务链 (25%)、科技/经济 (25%)、外交 (15%)</td>
+              <td class="py-3 px-3 text-amber-300">国库黄金、粮食/锤子、城市健康/快乐、外交态度分</td>
+              <td class="py-3 px-3 text-slate-400">史诗级长线任务链 (Quests)、地块新资源意外生成 (Tin/Gold)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MAIN EVENT DATABASE GRID -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold font-serif text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-book-bookmark text-amber-400"></i> 策略游戏代表性事件全量数据库
+        </h3>
+        <div class="text-xs font-mono text-slate-400">
+          匹配事件: <span id="event-count" class="text-amber-300 font-bold">0</span> 项
+        </div>
+      </div>
+
+      <!-- Events Cards Container -->
+      <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically injected via JS -->
+      </div>
+    </div>
+
+    <!-- MAPPING TO USER ORIGINAL DESIGN -->
+    <section class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm sm:text-base font-bold font-serif text-amber-300 flex items-center gap-2">
+          <i class="fa-solid fa-lightbulb text-amber-400"></i> 本专题对您《资源生产：拉条与军事》自研游戏的落地建议
+        </h3>
+        <span class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">GDD 落地设计</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        
+        <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2">
+          <div class="font-bold text-amber-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders"></i> 1. 拉条极值与系统阈值事件
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            将人口拉条状态与事件深度绑定：
+          </p>
+          <ul class="list-disc list-inside text-slate-300 space-y-1 text-[11px] font-mono">
+            <li>兵员拉条 > 40% 达 60天 $ightarrow$ 触发【尚武风潮】或【农桑荒废】</li>
+            <li>闲置拉条 > 30% 达 90天 $ightarrow$ 触发【人口婴儿潮 / 流民涌入】</li>
+            <li>粮食净盈余 < 0 达 30天 $ightarrow$ 触发【哗变抢粮 / 兵力溃逃】</li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2">
+          <div class="font-bold text-cyan-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-meteor"></i> 2. “火星资源”事件池规范化
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            将纯随机事件区分为【良性增益】与【危机选择】：
+          </p>
+          <ul class="list-disc list-inside text-slate-300 space-y-1 text-[11px] font-mono">
+            <li>【西域贡马】花费金钱低价收购 50 匹良驹</li>
+            <li>【前朝古库】直接获得 50 具重甲军械</li>
+            <li>【豪商捐饷】以降低商业税率为代价换取 800 启动金</li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2">
+          <div class="font-bold text-emerald-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-flag-checkered"></i> 3. 引入文明4式“长线试炼任务”
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            为进阶军备编组提供长线成就追求：
+          </p>
+          <ul class="list-disc list-inside text-slate-300 space-y-1 text-[11px] font-mono">
+            <li>【万骑奔腾任务】编组 5 队突击轻骑 $ightarrow$ 全体骑兵战力永久 +15%</li>
+            <li>【大洋制霸任务】沿海建造 3 艘艨艟 $ightarrow$ 沿海城市商业收益 +25%</li>
+            <li>【常备禁军任务】常备军比例维持 50% 达 1年 $ightarrow$ 解锁专属名将重骑</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- EVENT DETAIL MODAL -->
+  <div id="detail-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+        <div class="flex items-center gap-2.5">
+          <div id="modal-icon-badge" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"></div>
+          <div>
+            <h3 id="modal-title" class="text-base font-bold text-slate-100"></h3>
+            <p id="modal-subtitle" class="text-xs text-slate-400 font-mono"></p>
+          </div>
+        </div>
+        <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 custom-scroll text-xs">
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-mono text-slate-400">📌 触发条件与引擎时机:</div>
+          <p id="modal-trigger" class="text-slate-200 font-mono"></p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="font-bold text-slate-300">🎮 玩家抉择分支与机制代价 (Choices & Consequences):</div>
+          <div id="modal-options" class="space-y-2 font-mono"></div>
+        </div>
+
+        <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80 space-y-1 text-slate-400 leading-relaxed">
+          <div class="font-bold text-amber-300">💡 策划设计哲学与底层原理 (Design Rationale):</div>
+          <p id="modal-rationale"></p>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 border-t border-slate-800 flex justify-end bg-slate-950">
+        <button onclick="closeDetailModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATABASE JAVASCRIPT -->
+  <script>
+    const eventsData = [
+      // ==========================================
+      // 1. CIVILIZATION IV: BEYOND THE SWORD (CIV 4)
+      // ==========================================
+      {
+        id: "civ4_tin_mine",
+        name: "发现锡矿 / 伴生富矿 (Tin / Mineral Discovery)",
+        game: "civ4",
+        category: "random",
+        gameName: "文明 4: 刀锋侧影",
+        categoryName: "1. 纯随机/地质奇遇",
+        desc: "在已有矿山改良的地块上，矿工意外发掘出了高纯度锡矿或贵金属伴生矿脉。",
+        trigger: "拥有【采矿/青铜器】科技，且领土内有正在运作的【矿山】地块。",
+        options: [
+          { text: "【扩大开采】", effect: "该矿山地块永久 +2 锤子 (产能产出)。" },
+          { text: "【提纯铸币】", effect: "该矿山地块永久 +2 黄金 (商业产出)。" }
+        ],
+        rationale: "打破文明系列地块固定产出的死板格局，给予玩家探索与改良地块时的正向惊喜反馈。"
+      },
+      {
+        id: "civ4_forest_fire",
+        name: "森林大火 (Forest Fire)",
+        game: "civ4",
+        category: "random",
+        gameName: "文明 4: 刀锋侧影",
+        categoryName: "1. 纯随机/自然灾害",
+        desc: "干旱与雷击引发了森林大火，迅速向周边林区蔓延。",
+        trigger: "领土内存在未砍伐的森林地块，回合初随机概率触发。",
+        options: [
+          { text: "【调拨专款紧急灭火】(花费 30 金)", effect: "保住林木，但国库承受开支。" },
+          { text: "【听任自然熄灭】(不花金钱)", effect: "森林地块被彻底烧毁，失去林场砍伐产能与健康加成。" }
+        ],
+        rationale: "制造突发性金钱支出压力，迫使玩家时刻保留一定规模的国库应急流动资金。"
+      },
+      {
+        id: "civ4_holy_mountain",
+        name: "圣山朝圣任务 (The Holy Mountain Quest)",
+        game: "civ4",
+        category: "quest",
+        gameName: "文明 4: 刀锋侧影",
+        categoryName: "5. 史诗任务与连锁链",
+        desc: "先知预言在远方巍峨的圣山上建立圣所，将为整个文明带来神圣福祉。",
+        trigger: "创立或传播某种宗教，拥有【神学/一神论】科技，进入古典/中世纪时代。",
+        options: [
+          { text: "【完成目标 1: 建造 4 座修道院并在圣山建城】", effect: "全国所有圣城产出翻倍，所有城市宗教快乐 +2。" },
+          { text: "【完成目标 2: 派遣大先知至圣山举行大典】", effect: "直接触发一次长达 8 回合的【黄金时代】。" }
+        ],
+        rationale: "Civ4 的标志性系统。提供跨越 30~50 回合的战略宏观目标，打破后期无聊垃圾时间。"
+      },
+      {
+        id: "civ4_horse_whispering",
+        name: "战马培育试炼 (Horse Whispering Quest)",
+        game: "civ4",
+        category: "quest",
+        gameName: "文明 4: 刀锋侧影",
+        categoryName: "5. 史诗任务与连锁链",
+        desc: "军中驯马师提出了一套全新的良种配种方案，需要帝国集中组建大规模骑兵部队以供遴选。",
+        trigger: "控制至少 1 处【马匹】资源，拥有【骑术/封建制度】科技。",
+        options: [
+          { text: "【完成目标: 训练 7 队马牌骑兵/骑士】", effect: "帝国所有现役及未来训练的骑兵单位免费获得【侧翼包抄 / 强化突击】晋升。" }
+        ],
+        rationale: "引导玩家根据地缘资源优势进行战略爆兵，并赋予不可逆的全局军事专精质变。"
+      },
+      {
+        id: "civ4_border_refugees",
+        name: "边境逃难流民 (Border Refugees)",
+        game: "civ4",
+        category: "interactive",
+        gameName: "文明 4: 刀锋侧影",
+        categoryName: "4. 乒乓博弈交互",
+        desc: "邻国发生战乱或暴政，大批难民越过国境线寻求庇护。",
+        trigger: "与交界邻国处于和平状态，且邻国正处于战争中或处于无政府状态。",
+        options: [
+          { text: "【全面接纳难民】", effect: "边境城市人口 +1，但与邻国关系恶化 (-2 外交态度)。" },
+          { text: "【遣返引渡逃民】", effect: "与邻国关系改善 (+2 外交态度)，但失去劳动力补充。" }
+        ],
+        rationale: "将内政劳动力收益与外部地缘外交关系做零和博弈，无唯一最优解。"
+      },
+      {
+        id: "civ4_great_harvest",
+        name: "农业超级丰收 (Bumper Crop / Great Harvest)",
+        game: "civ4",
+        category: "random",
+        gameName: "文明 4: 刀锋侧影",
+        categoryName: "1. 纯随机/农业增益",
+        desc: "今年风调雨顺，特定农业特化省份的农作物产量创下历史新高。",
+        trigger: "拥有农场改良与粮仓建筑，处于和平时期。",
+        options: [
+          { text: "【充实粮仓储备】", effect: "该城市粮仓进度直接填满 100%，下回合立即增长 1 人口。" },
+          { text: "【运往市场倾销】", effect: "获得 120 国库金钱收益。" }
+        ],
+        rationale: "直接在‘人口再生产’与‘国库变现’之间提供即时决策。"
+      },
+      {
+        id: "civ4_diplomatic_incident",
+        name: "宫廷间谍被捕丑闻 (Diplomatic Espionage Incident)",
+        game: "civ4",
+        category: "interactive",
+        gameName: "文明 4: 刀锋侧影",
+        categoryName: "4. 乒乓博弈交互",
+        desc: "皇家卫队在宫廷机密档案室内生擒了邻国派遣的高级细作。",
+        trigger: "进入中世纪/文艺复兴，邻国间谍点数活跃。",
+        options: [
+          { text: "【公开处决并严厉谴责】", effect: "获得对该国的合法【宣战理由 (CB)】，但两国外交态度降至冰点。" },
+          { text: "【秘密勒索赎金】", effect: "勒索对方 100 黄金，但放弃宣战借口。" }
+        ],
+        rationale: "为玩家制造合法的战争发动借口（Casus Belli），驱动地缘战争爆发。"
+      },
+      {
+        id: "civ4_academic_symposium",
+        name: "古典学术盛会 (Academic Symposium)",
+        game: "civ4",
+        category: "random",
+        gameName: "文明 4: 刀锋侧影",
+        categoryName: "1. 纯随机/科技突破",
+        desc: "全国学者齐聚首都图书馆，就前沿哲学与几何学展开论道，迸发出璀璨思想火花。",
+        trigger: "首都建造了【图书馆】或【大学】，拥有哲学/教育学科技。",
+        options: [
+          { text: "【国家重奖资助学派】(花费 50 金)", effect: "当前正在研发的科技直接获得 +300 科技瓶加速。" },
+          { text: "【编纂盛会典籍】", effect: "首都获得 +4 文化产出/回合。" }
+        ],
+        rationale: "将多余的金钱直接转化为科技研发加速度。"
+      },
+
+      // ==========================================
+      // 2. EUROPA UNIVERSALIS IV (EU4)
+      // ==========================================
+      {
+        id: "eu4_comet_sighted",
+        name: "彗星现世 (Comet Sighted)",
+        game: "eu4",
+        category: "random",
+        gameName: "欧陆风云 4",
+        categoryName: "1. 纯随机/恶意恶搞",
+        desc: "夜空中划过一道巨大的彗星，民间谣传天降灾异、王朝将倾。",
+        trigger: "全国稳定度 > -3，基于双年脉冲随机触发（P社著名老梗）。",
+        options: [
+          { text: "【这是天谴！】", effect: "稳定度 -1" },
+          { text: "【要是我们生活在更开明的时代就好了...】", effect: "稳定度 -1" },
+          { text: "【这只是个彗星，傻瓜！】", effect: "稳定度 -1" },
+          { text: "【牺牲一个爱尔兰人来平息愤怒！】", effect: "稳定度 -1" }
+        ],
+        rationale: "强制扣减稳定度，打破玩家常年保持 +3 稳定度的过度舒适状态。"
+      },
+      {
+        id: "eu4_nobles_demand",
+        name: "贵族阶层索求特权 (Nobles Demand Privileges)",
+        game: "eu4",
+        category: "random",
+        gameName: "欧陆风云 4",
+        categoryName: "1. 纯随机/阶级博弈",
+        desc: "地方贵族豪强联名上书，要求君主免除其兵役赋税并出让地方司法裁判权。",
+        trigger: "国内贵族阶层影响力 > 40%。",
+        options: [
+          { text: "【准奏！安抚贵族】", effect: "贵族忠诚度 +15%，但专制主义上限 -10，地方自治度上升。" },
+          { text: "【严词拒绝！削弱门阀】", effect: "贵族忠诚度 -20%，某省份刷新 2 队贵族叛乱叛军。" }
+        ],
+        rationale: "动态调控君主集权与封建割据力量之间的平衡。"
+      },
+      {
+        id: "eu4_unguarded_nomad",
+        name: "游牧无备边患大灾难 (Unguarded Nomad Frontier)",
+        game: "eu4",
+        category: "threshold",
+        gameName: "欧陆风云 4",
+        categoryName: "3. 系统阈值/机制灾难",
+        desc: "大一统中华帝国边境崛起了一个庞大且不受羁縻的草原游牧大汗国，天命秩序受到根本动摇！",
+        trigger: "作为中华天子，边境存在一个发展度 > 300 且未向天子朝贡的游牧势力。",
+        options: [
+          { text: "【大灾难爆发：天下分崩】", effect: "每月天命暴跌 -0.3，全国陆军受创伤害 +50%，地方叛乱暴增。" }
+        ],
+        rationale: "纯粹由地缘数值与外交状态触发的系统机制性灾难，逼迫天子必须主动北伐或重金册封朝贡。"
+      },
+      {
+        id: "eu4_bankruptcy",
+        name: "国家主权破产 (State Bankruptcy)",
+        game: "eu4",
+        category: "threshold",
+        gameName: "欧陆风云 4",
+        categoryName: "3. 系统阈值/破产惩罚",
+        desc: "国库债务本息已远超全国借贷总额上限，政府信用彻底崩塌，宣告破产！",
+        trigger: "贷款总数达到上限，月财政赤字仍无法弥补利息支出。",
+        options: [
+          { text: "【宣布国家破产】", effect: "所有贷款清零；5年内陆海军士气 -50%，建筑被拆毁，科技与理念花费 +50%。" }
+        ],
+        rationale: "防止玩家无限借债爆兵滚雪球的终极硬核经济红线。"
+      },
+      {
+        id: "eu4_succession_war",
+        name: "王位继承战争 (War of the Succession)",
+        game: "eu4",
+        category: "interactive",
+        gameName: "欧陆风云 4",
+        categoryName: "4. 乒乓博弈交互",
+        desc: "某国老国王无嗣驾崩，与该国联姻的两大强国同时宣称对其王位的继承权！",
+        trigger: "目标国君主死亡且无正统继承人，至少与两个大国有王室联姻。",
+        options: [
+          { text: "【誓死捍卫联姻继承权！】", effect: "与竞争对手大国爆发争夺该国统治权的惨烈继承战争。" },
+          { text: "【放弃宣称以求自保】", effect: "扣除 20 威望，对方直接将该国变为附庸同君联合。" }
+        ],
+        rationale: "将和平的婚姻外交手段与最高烈度的大国全面战争无缝联动。"
+      },
+
+      // ==========================================
+      // 3. HEARTS OF IRON 2 (HOI2 / DH)
+      // ==========================================
+      {
+        id: "hoi2_private_initiative",
+        name: "民间投资涌入 (Private Initiative / Investment)",
+        game: "hoi2",
+        category: "random",
+        gameName: "钢铁雄心 2",
+        categoryName: "1. 纯随机/工业波动",
+        desc: "由于市场预期向好，民间财阀向重工业与采矿业追加了大量私人投资。",
+        trigger: "经济滑条偏向【自由市场】，和平时期按日心跳概率抽取。",
+        options: [
+          { text: "【国家注资鼓励】(花费 100 金)", effect: "随机指定核心省份永久 +1 工业值 (IC)。" },
+          { text: "【仅收税金】", effect: "国库直接获得 +300 金钱。" }
+        ],
+        rationale: "奖励走自由市场路线的国家，带来随机的工业潜能扩张。"
+      },
+      {
+        id: "hoi2_political_scandal",
+        name: "内阁政治丑闻 (Political Scandal)",
+        game: "hoi2",
+        category: "random",
+        gameName: "钢铁雄心 2",
+        categoryName: "1. 纯随机/政局动荡",
+        desc: "内阁核心部长被曝出重大贪腐或叛国丑闻，国内舆论一片哗然。",
+        trigger: "处于非完全独裁体制，按年概率抽取。",
+        options: [
+          { text: "【强行包庇部长】", effect: "国民不满度 (Dissent) +3%，工业与组织度受损。" },
+          { text: "【革职彻查以平民愤】", effect: "政治滑条强制向‘民主/开放’方向移动 1 格。" }
+        ],
+        rationale: "动态打破玩家锁定政治滑条的战略意图，制造内政波澜。"
+      },
+      {
+        id: "hoi2_scientific_breakthrough",
+        name: "军工重大科研突破 (Scientific Breakthrough)",
+        game: "hoi2",
+        category: "random",
+        gameName: "钢铁雄心 2",
+        categoryName: "1. 纯随机/科技加速",
+        desc: "某军工科研团队在风洞实验或弹道计算中取得了突破性进展！",
+        trigger: "正在研发 5 级以上军工/雷达/航空科技。",
+        options: [
+          { text: "【天佑吾国！】", effect: "该在研科技直接获得【蓝图 (Blueprint)】，后续研发速度翻倍。" }
+        ],
+        rationale: "模拟二战军工研发中的灵光一现，缩短关键装备换装周期。"
+      },
+      {
+        id: "hoi2_worker_strike",
+        name: "重工业工人全国总罢工 (National Industrial Strike)",
+        game: "hoi2",
+        category: "threshold",
+        gameName: "钢铁雄心 2",
+        categoryName: "3. 系统阈值/罢工危机",
+        desc: "由于国民不满度过高且消费品供给严重不足，重工业工人走上街头拒绝生产军火！",
+        trigger: "国民不满度 (Dissent) > 10% 且连续维持 30 天以上。",
+        options: [
+          { text: "【妥协让步：大幅提升消费品滑条】", effect: "消费品需求暴增 50%，军工产能大幅压缩。" },
+          { text: "【武力镇压】", effect: "不满度再 +5%，某些省份可能爆发武装起义。" }
+        ],
+        rationale: "严惩忽视后方民生与过度穷兵黩武的玩家，形成经济拉条的硬约束。"
+      },
+
+      // ==========================================
+      // 4. CHINA-THEMED EVENTS (EU4 / HOI2 / MODS)
+      // ==========================================
+      {
+        id: "china_tumu_crisis",
+        name: "土木堡之变 (The Tumu Crisis)",
+        game: "china",
+        category: "historical",
+        gameName: "EU4 / 中国专题",
+        categoryName: "2. 真实史实剧本",
+        desc: "瓦剌太师也先大举南侵，明英宗在王振唆使下仓促亲征，大军在怀来土木堡被围溃败！",
+        trigger: "1449年剧本，瓦剌与明朝处于战争中，明英宗作为主将战败。",
+        options: [
+          { text: "【天子蒙尘：英宗被俘】", effect: "皇帝被俘，明朝稳定度 -3，天命归零；瓦剌获得围攻北京借口。" },
+          { text: "【于谦辅政：社稷为重君为轻】", effect: "拥立新君景泰帝，北京要塞防御 +50%，全国军民士气大振。" }
+        ],
+        rationale: "中国历史上最著名的军事转折点，重现‘天子守国门’的危机绝境救赎。"
+      },
+      {
+        id: "china_zheng_he",
+        name: "郑和宝船七下西洋 (Voyages of Zheng He)",
+        game: "china",
+        category: "historical",
+        gameName: "EU4 / 中国专题",
+        categoryName: "2. 真实史实剧本",
+        desc: "永乐大帝诏令建造远洋巨舰，派遣三宝太监统领两万将士出使西洋万国。",
+        trigger: "明成祖在位期，国库资金 > 500 金，拥有沿海造船港口。",
+        options: [
+          { text: "【耀兵异域：扬我大明国威】(耗费 300 金)", effect: "点亮印度洋与东非全图视野，南洋 15 国立即成为朝贡国。" },
+          { text: "【罢黜远航：休养生息】", effect: "节省国库开支，但失去大航海先机。" }
+        ],
+        rationale: "展现古代朝贡外交体系的巅峰，以重金换取庞大的地缘视野与外交霸权。"
+      },
+      {
+        id: "china_xian_incident",
+        name: "西安事变 (The Xi'an Incident)",
+        game: "china",
+        category: "historical",
+        gameName: "HoI2 / 抗战专题",
+        categoryName: "2. 真实史实剧本",
+        desc: "1936年12月12日，张学良与杨虎城在临潼发动兵谏，扣押蒋介石要求停止内战一致抗日。",
+        trigger: "1936年12月，国民政府与陕北红军处于对峙状态。",
+        options: [
+          { text: "【和平解决：停止内战一致抗日】", effect: "国共停战，建立抗日民族统一战线，全民族抗战机制激活！" },
+          { text: "【武力讨伐：内战到底】(架空分支)", effect: "中央军进攻西北，国内爆发全面大混战，日本提前全面侵华。" }
+        ],
+        rationale: "抗战爆发前夕的最核心地缘抉择，决定近代中国抗日阵线的存亡。"
+      },
+      {
+        id: "china_industry_inland",
+        name: "沿海工业内迁与陪都重庆 (Inland Industrial Relocation)",
+        game: "china",
+        category: "historical",
+        gameName: "HoI2 / 抗战专题",
+        categoryName: "2. 真实史实剧本",
+        desc: "淞沪会战爆发后，沿海各大工厂冒着敌机轰炸拆卸机床，通过长江木船艰难西迁大后方。",
+        trigger: "抗日战争全面爆发，上海/南京陷落危险。",
+        options: [
+          { text: "【举国拆迁：扎根大后方】", effect: "沿海 60% 工业值 (IC) 转移至四川/重庆/云南，重庆获得山地要塞防线。" },
+          { text: "【原地死守】", effect: "工厂沦陷后直接被日军占领掠夺。" }
+        ],
+        rationale: "模拟抗日战争中‘空间换时间’的持久抗战底力与工业大迁徙。"
+      },
+      {
+        id: "china_yellow_river_flood",
+        name: "黄河决口与治河筹饷 (Yellow River Breaches)",
+        game: "china",
+        category: "threshold",
+        gameName: "EU4/MOD / 中国专题",
+        categoryName: "3. 系统阈值/水利灾害",
+        desc: "连年失修叠加罕见暴雨，黄河在开封段决口，洪水滔天泛滥三省！",
+        trigger: "国库连续 3 年未拨付治河专款，北方发生连续干旱/暴雨。",
+        options: [
+          { text: "【国库拨付巨款筑堤救灾】(花费 500 金)", effect: "国库大失血，但保住百姓生计与地方稳定度。" },
+          { text: "【无银可拨：听天由命】", effect: "沿河各府自治度飙升至 100%，爆发大规模流民起义 (李自成/红巾军)。" }
+        ],
+        rationale: "中国大战略中‘治河即治国’的硬核历史机制，水利不修则天下大乱。"
+      }
+    ];
+
+    let currentSource = "all";
+    let currentCategory = "all";
+    let searchQuery = "";
+
+    function renderEvents() {
+      const container = document.getElementById('events-grid');
+      container.innerHTML = '';
+
+      const filtered = eventsData.filter(e => {
+        const matchSource = (currentSource === 'all' || e.game === currentSource);
+        const matchCategory = (currentCategory === 'all' || e.category === currentCategory);
+        const matchSearch = (
+          e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.gameName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.categoryName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        return matchSource && matchCategory && matchSearch;
+      });
+
+      document.getElementById('event-count').innerText = filtered.length;
+
+      filtered.forEach(ev => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-lg hover:border-amber-500/50 transition-all flex flex-col justify-between group space-y-3 cursor-pointer";
+        card.onclick = () => openDetailModal(ev.id);
+
+        let badgeColor = "bg-cyan-950 text-cyan-400 border-cyan-800/40";
+        if (ev.game === 'hoi2') badgeColor = "bg-orange-950 text-orange-400 border-orange-800/40";
+        if (ev.game === 'civ4') badgeColor = "bg-emerald-950 text-emerald-400 border-emerald-800/40";
+        if (ev.game === 'china') badgeColor = "bg-rose-950 text-rose-400 border-rose-800/40";
+
+        let catColor = "text-cyan-300";
+        if (ev.category === 'historical') catColor = "text-amber-300";
+        if (ev.category === 'threshold') catColor = "text-rose-400";
+        if (ev.category === 'interactive') catColor = "text-purple-300";
+        if (ev.category === 'quest') catColor = "text-emerald-400";
+
+        card.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono border ${badgeColor}">
+                ${ev.gameName}
+              </span>
+              <span class="text-[10px] font-mono ${catColor} font-semibold">
+                ${ev.categoryName}
+              </span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-100 group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+              ${ev.name}
+            </h4>
+            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+              ${ev.desc}
+            </p>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-500">
+            <span>查看完整分支与设计原理</span>
+            <i class="fa-solid fa-arrow-right text-amber-400 group-hover:translate-x-1 transition-transform"></i>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterSource(source) {
+      currentSource = source;
+      const tabs = ['all', 'eu4', 'hoi2', 'civ4', 'china'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === source) {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-black shadow transition-all";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-950 border border-slate-800 transition-all";
+        }
+      });
+      renderEvents();
+    }
+
+    function filterCategory() {
+      currentCategory = document.getElementById('category-select').value;
+      renderEvents();
+    }
+
+    function onSearchInput() {
+      searchQuery = document.getElementById('search-input').value;
+      renderEvents();
+    }
+
+    function openDetailModal(eventId) {
+      const ev = eventsData.find(e => e.id === eventId);
+      if (!ev) return;
+
+      document.getElementById('modal-title').innerText = ev.name;
+      document.getElementById('modal-subtitle').innerText = `${ev.gameName} · ${ev.categoryName}`;
+      document.getElementById('modal-trigger').innerText = ev.trigger;
+      document.getElementById('modal-rationale').innerText = ev.rationale;
+
+      const badge = document.getElementById('modal-icon-badge');
+      if (ev.game === 'civ4') {
+        badge.className = "w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center";
+        badge.innerHTML = `<i class="fa-solid fa-mountain-sun"></i>`;
+      } else if (ev.game === 'eu4') {
+        badge.className = "w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center";
+        badge.innerHTML = `<i class="fa-solid fa-crown"></i>`;
+      } else if (ev.game === 'hoi2') {
+        badge.className = "w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/40 flex items-center justify-center";
+        badge.innerHTML = `<i class="fa-solid fa-gear"></i>`;
+      } else {
+        badge.className = "w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center";
+        badge.innerHTML = `<i class="fa-solid fa-dragon"></i>`;
+      }
+
+      const optContainer = document.getElementById('modal-options');
+      optContainer.innerHTML = '';
+      ev.options.forEach((opt, idx) => {
+        const div = document.createElement('div');
+        div.className = "bg-slate-950 p-2.5 rounded-lg border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2";
+        div.innerHTML = `
+          <span class="font-bold text-amber-300">${opt.text}</span>
+          <span class="text-emerald-400 text-[11px]">${opt.effect}</span>
+        `;
+        optContainer.appendChild(div);
+      });
+
+      document.getElementById('detail-modal').classList.remove('hidden');
+      document.getElementById('detail-modal').classList.add('flex');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+      document.getElementById('detail-modal').classList.remove('flex');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderEvents();
+    });
+  </script>
+</body>
+</html>
