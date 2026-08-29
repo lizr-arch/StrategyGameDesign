@@ -10,7 +10,8 @@
 ```bash
 original_designs/
 ├── 01_game_design_documents/     # 📄 核心策划案 (GDD - Game Design Documents)
-│   └── GDD_TEMPLATE.md           # 策略游戏标准化完整策划案模板 (包含核心心流、机制定义、UI规范)
+│   ├── GDD_TEMPLATE.md           # 策略游戏标准化完整策划案模板 (包含核心心流、机制定义、UI规范)
+│   └── chronos_gdd_v1.md         # 《Project Chronos》第一期策划案 v0.1（调研决策落地，⚠️ 待验证项显式标注）
 │
 ├── 02_mechanics_architecture/    # ⚙️ 核心机制与系统架构深度拆解
 │   └── modular_systems_guide.md  # 模块化机制设计指南 (时钟系统、人口/经济流动、战斗解算、AI状态机)
