@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="gzd0rHUK8ug9w15vwPquZJ">
+<head data-page-node-id="vsy2vZ5GHmfPOsonE1yBn3">
+<meta charset="UTF-8" data-page-node-id="Q3CS3PBXW1noPeO5NINbvn">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="anC7YB40QsiGBLeui07iSO">
+<title>《Project Chronos》玩法框架与玩家调研分析</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --line:#e5e8ee; --ink:#1f2430; --muted:#6b7280;
+    --ok:#0e9f6e; --okbg:#e7f8f1; --warn:#b45309; --warnbg:#fdf3e3; --ref:#0369a1; --refbg:#e8f3fb;
+    --acc:#4f46e5; --accbg:#eef2ff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif; line-height:1.75; font-size:15px;}
+  a{color:var(--acc); text-decoration:none;} a:hover{text-decoration:underline;}
+
+  /* Layout */
+  .layout{max-width:1060px; margin:0 auto;}
+  .wrap{min-width:0; padding:0 20px 80px;}
+
+  /* Header */
+  header.hero{background:linear-gradient(135deg,#312e81 0%,#4f46e5 55%,#6d28d9 100%); color:#fff; padding:52px 20px 44px; margin-bottom:28px;}
+  .hero-inner{max-width:1060px; margin:0 auto;}
+  .hero h1{font-size:28px; font-weight:700; letter-spacing:.5px; margin-bottom:10px;}
+  .hero p.sub{color:#c7d2fe; font-size:14px; max-width:780px;}
+  .hero .meta{display:flex; flex-wrap:wrap; gap:8px; margin-top:18px;}
+  .pill{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); border-radius:999px; padding:4px 12px; font-size:12.5px; color:#e0e7ff; backdrop-filter:blur(4px);}
+  .pill b{color:#fff; font-weight:600;}
+
+  /* TOC —— 窄屏(<1180px):顶部可折叠抽屉 */
+  nav.toc{position:sticky; top:0; z-index:30; background:var(--card); border:1px solid var(--line); border-radius:0 0 12px 12px; box-shadow:0 6px 16px rgba(16,24,40,.07); margin-bottom:22px;}
+  nav.toc .toc-bar{display:flex; align-items:center; gap:8px; padding:11px 16px; cursor:pointer; user-select:none;}
+  nav.toc .toc-title{font-size:12px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; font-weight:700;}
+  nav.toc .toc-count{font-size:11px; color:var(--acc); background:var(--accbg); border-radius:999px; padding:1px 8px; font-weight:600;}
+  nav.toc .toc-toggle{margin-left:auto; color:var(--muted); font-size:12px; transition:transform .2s ease;}
+  nav.toc.open .toc-toggle{transform:rotate(180deg);}
+  nav.toc .toc-links{display:none; padding:2px 12px 12px; max-height:calc(100vh - 130px); overflow:auto;}
+  nav.toc.open .toc-links{display:block;}
+  nav.toc .toc-cap{display:none;}
+  nav.toc a{display:block; color:#374151; padding:5px 10px; border-radius:7px; margin:1px 0; font-size:13px;}
+  nav.toc a:hover{background:var(--accbg); color:var(--acc); text-decoration:none;}
+  nav.toc a.active{background:var(--accbg); color:var(--acc); font-weight:600;}
+  nav.toc a.lvl2{padding-left:22px; color:var(--muted); font-size:12.5px;}
+  section[id], h3[id]{scroll-margin-top:88px;}
+
+  /* TOC —— 宽屏(≥1180px):固定左栏 */
+  @media(min-width:1180px){
+    .layout{max-width:1180px; display:flex; gap:24px; align-items:flex-start;}
+    .hero-inner{max-width:1180px;}
+    nav.toc{position:sticky; top:16px; flex:0 0 232px; max-height:calc(100vh - 32px); overflow:auto; border-radius:12px; box-shadow:none; margin-bottom:0; padding:14px 14px 12px;}
+    nav.toc .toc-bar{display:none;}
+    nav.toc .toc-links{display:block; max-height:none; overflow:visible; padding:0;}
+    nav.toc .toc-cap{display:block; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:2px 8px 8px;}
+    nav.toc a{font-size:12.5px;}
+    section[id], h3[id]{scroll-margin-top:24px;}
+  }
+
+  /* Sections */
+  section.block{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:26px 28px; margin-bottom:22px; box-shadow:0 1px 2px rgba(16,24,40,.04);}
+  h2.sec{font-size:20px; font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:10px;}
+  h2.sec .no{background:var(--acc); color:#fff; font-size:13px; width:28px; height:28px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; flex:none;}
+  .sec-desc{color:var(--muted); font-size:13px; margin-bottom:16px;}
+  h3.sub{font-size:16px; font-weight:600; margin:22px 0 10px; padding-bottom:6px; border-bottom:1px dashed var(--line);}
+  h4.mini{font-size:14px; font-weight:600; margin:14px 0 6px;}
+
+  /* Tables */
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin:10px 0 6px;}
+  th{background:#f1f3f7; font-weight:600; text-align:left; padding:8px 10px; border:1px solid var(--line); white-space:nowrap;}
+  td{padding:8px 10px; border:1px solid var(--line); vertical-align:top;}
+  tr:nth-child(even) td{background:#fafbfc;}
+  .tbl-scroll{overflow-x:auto;}
+
+  /* Status badges */
+  .st{display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:1px 9px; font-size:12px; font-weight:500; white-space:nowrap;}
+  .st-ok{background:var(--okbg); color:var(--ok); border:1px solid #bbe8d5;}
+  .st-warn{background:var(--warnbg); color:var(--warn); border:1px solid #f3d9a4;}
+  .st-ref{background:var(--refbg); color:var(--ref); border:1px solid #bfe0f2;}
+
+  /* Quotes */
+  blockquote{background:#f5f7ff; border-left:3px solid var(--acc); border-radius:0 8px 8px 0; padding:10px 16px; margin:10px 0; font-size:13.5px; color:#334155;}
+  blockquote em{font-style:normal; color:var(--ink);}
+  blockquote .who{font-size:12px; color:var(--acc); font-weight:600; margin-right:6px;}
+
+  /* Lists */
+  ul,ol{margin:6px 0 10px; padding-left:22px;}
+  li{margin:3px 0;}
+  .tight li{margin:1px 0;}
+
+  /* Root cause cards */
+  .rc{border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:14px 0; background:#fff; border-left:4px solid var(--acc);}
+  .rc h4{font-size:15px; font-weight:700; margin-bottom:4px;}
+  .rc .claim{font-size:13.5px; color:#334155; background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin:8px 0;}
+  .rc .who-line{font-size:12px; color:var(--muted); margin-bottom:6px;}
+  .rc .who-line b{color:var(--ink);}
+  .rc .imply{font-size:13px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);}
+  .rc .imply b{color:var(--acc);}
+
+  /* Person chips */
+  .chips{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;}
+  .chip{background:#eef2ff; color:#4338ca; border:1px solid #dbe0fb; border-radius:999px; padding:2px 10px; font-size:12px;}
+  .chip b{font-weight:700;}
+
+  /* Flow diagram (1.1) */
+  .flow{display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; margin:14px 0 6px;}
+  .fnode{flex:1; min-width:150px; border-radius:10px; padding:12px 14px; font-size:13px; border:1px solid var(--line);}
+  .fnode .t{font-weight:700; font-size:14px; margin-bottom:4px; display:flex; align-items:center; gap:6px;}
+  .fnode .s{color:var(--muted); font-size:12px; line-height:1.6;}
+  .fnode.stage{background:var(--accbg); border-color:#d3d9fb;}
+  .fnode.res{background:var(--okbg); border-color:#bbe8d5;}
+  .fnode.layer{background:var(--warnbg); border-color:#f3d9a4;}
+  .fnode.flavor{background:var(--refbg); border-color:#bfe0f2;}
+  .farrow{align-self:center; color:#9aa3b5; font-size:18px; font-weight:700; padding:0 2px;}
+
+  /* Decision matrix summary */
+  .stats{display:flex; flex-wrap:wrap; gap:12px; margin:14px 0 4px;}
+  .stat{flex:1; min-width:160px; border-radius:10px; padding:12px 16px; border:1px solid var(--line);}
+  .stat .n{font-size:22px; font-weight:800;}
+  .stat .l{font-size:12px; color:var(--muted);}
+  .stat.ok .n{color:var(--ok);} .stat.ok{background:var(--okbg); border-color:#bbe8d5;}
+  .stat.warn .n{color:var(--warn);} .stat.warn{background:var(--warnbg); border-color:#f3d9a4;}
+  .stat.ref .n{color:var(--ref);} .stat.ref{background:var(--refbg); border-color:#bfe0f2;}
+
+  /* Appendix / misc */
+  .note{font-size:13px; color:var(--muted);}
+  .legend{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0;}
+  .divider{border:none; border-top:1px solid var(--line); margin:18px 0;}
+  footer{color:var(--muted); font-size:12.5px; text-align:center; margin-top:30px;}
+  .docs-links li{margin:4px 0; font-size:13.5px;}
+</style>
+</head>
+<body data-page-node-id="fYfSxB5c05RdC5FvFo0aWL">
+
+<header class="hero" data-page-node-id="U0KmCYrGMmb6X23Xz5gk16">
+  <div class="hero-inner" data-page-node-id="GMUNdqsqBfWY7rqrUjkd6z">
+    <h1 data-page-node-id="bG82JomDfrX9BjAtAWArbG">《Project Chronos》玩法框架与玩家调研分析</h1>
+    <p class="sub" data-page-node-id="0aRKz0lY5jtBnSXoVrjJvD">上游材料：<a href="https://docs.qq.com/doc/DUnhCbHJQTXBCSWtM" style="color:#c7d2fe;text-decoration:underline" data-page-node-id="8ErTWwzt0rRrE6Ex4HFc5K">腾讯文档《点子收集》</a>（作者：森）——策划框架 + 8 个设计问题 × 8 位受访玩家（含作者共 9 段回答）。本文产出：① 玩法框架（逐项标注确定/未决/参照）② 调研根因归类 ③ 决策矩阵。全部细节与原文证据保留于正文，供后续 GDD 撰写直接引用。</p>
+    <div class="meta" data-page-node-id="6n39fRxDtGF5fMkpuUa8jT">
+      <span class="pill" data-page-node-id="OXQTaBEGCXVVfbwf0jwNPR">分类 <b data-page-node-id="aKKWwmVS5xRypQlgGkRUbk">research</b></span>
+      <span class="pill" data-page-node-id="75tVG5yGC8wqPJi2R2OwF1">版本 <b data-page-node-id="ZE7U77Xnex4w5xZVwG7H8a">v1.0.1</b></span>
+      <span class="pill" data-page-node-id="n5vEGyH2An2h4kiR1LBinO">更新 <b data-page-node-id="htvA2D0NlThRUWgFDfWXYZ">2026-08-29</b></span>
+      <span class="pill" data-page-node-id="5doc1g96BWazxrSjXHXLWR">核心交付 <b data-page-node-id="hJNk7NkR0e1g7VTNhMysFV">3 件套</b></span>
+      <span class="pill" data-page-node-id="1IPce1ooTM6zrwxliObdxP">受访者 <b data-page-node-id="Fh62oeinK7AAvXRquiiYXO">8 人 + 作者</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="toc" data-page-node-id="5afTGlmk7XJiVQLevVZLNW">
+  <div class="toc-bar">
+    <span class="toc-title">目录</span>
+    <span class="toc-count">13 项</span>
+    <span class="toc-toggle">▾</span>
+  </div>
+  <div class="toc-links">
+  <div class="toc-cap">目录</div>
+  <a href="#legend" data-page-node-id="kxe5kjjLZ1zzuOc7N9z0KK">标注体系与受访者</a>
+  <a href="#s1" data-page-node-id="FCVGelHZOE1b2GkUnJxPG5">一、玩法框架</a>
+  <a class="lvl2" href="#s1-1" data-page-node-id="Hlsbb1XYpyChE9lDkhemgV">1.1 总览</a>
+  <a class="lvl2" href="#s1-2" data-page-node-id="sbrU6d2NvzUVB40jEFhogU">1.2 时空三尺度</a>
+  <a class="lvl2" href="#s1-3" data-page-node-id="zpcv8YH54vEDOun9wpRNXp">1.3 资源体系</a>
+  <a class="lvl2" href="#s1-5" data-page-node-id="HuZZpPgddGXeSB92zGoBEL">1.5 战术结算</a>
+  <a class="lvl2" href="#s1-8" data-page-node-id="6BPB3Pfxr0G239fntUEskW">1.8 框架状态汇总</a>
+  <a class="lvl2" href="#s1-9" data-page-node-id="48UbSNY7sGk9GiVmJ3Wogt">1.9 参照游戏总表</a>
+  <a href="#s2" data-page-node-id="MDIUqLUgMT9x8KQR0HI7uG">二、调研根因 R1–R8</a>
+  <a href="#s3" data-page-node-id="3QVGz1qrFLDjeRaRBbeE74">三、决策矩阵 D1–D8</a>
+  <a href="#s4" data-page-node-id="OlHaQfR64HR3C2ah6zIKoV">四、开放问题</a>
+  <a href="#appendix" data-page-node-id="KHd48RivmdP76zDrfM3rog">附录：8 问题原文</a>
+  <a href="#related" data-page-node-id="6Dt7pp6CPEXB0U0Go5EH4K">相关文档</a>
+  </div>
+</nav>
+
+<div class="wrap" data-page-node-id="IOnlDONet33mzoXqlMRiB4">
+
+  <!-- 标注体系 -->
+  <section class="block" id="legend" data-page-node-id="u44BlHvyX8WkKwPO75L7d8">
+    <h2 class="sec" data-page-node-id="sVFXARClRbWaKgTQXG7nTP"><span class="no" data-page-node-id="589djWlRXVbXsxwsRnoZR3">〇</span>标注体系（阅读约定）</h2>
+    <div class="legend" data-page-node-id="GPdk3tf3HChr6GN4F3c8pO">
+      <span class="st st-ok" data-page-node-id="2tlWhl9aq23pbBAsbKOi1G">✅ 确定</span><span class="note" data-page-node-id="r5bIH2My8mTrMuYXwyPMSe">上游文档内有明确结论，或森本人明确表态的方向</span>
+      <span class="st st-warn" data-page-node-id="jPU4gR0bBfw2y8tRHJlTIU">⚠️ 未决</span><span class="note" data-page-node-id="40VypyG3nefmq0mkY3fFw5">存在分歧、尚无结论，或需市场/原型验证</span>
+      <span class="st st-ref" data-page-node-id="pmSXx1lphbj9fADeGTePcd">📎 参照</span><span class="note" data-page-node-id="lOPqZuBPdtjGtHAWyA5fYJ">仅作为参照系出现的游戏/机制，不代表已选型</span>
+    </div>
+    <h4 class="mini" data-page-node-id="ZUNWACrj04IXOmBWesJlKL">受访者代号</h4>
+    <div class="chips" data-page-node-id="p6nu0aEF1KLcSZOgfZTbTZ">
+      <span class="chip" data-page-node-id="smbwFHA8XuHiVkonlWqMBi"><b data-page-node-id="pkdTsbPeszsfVFpu7C648E">森</b> 作者</span>
+      <span class="chip" data-page-node-id="ckvRhZskXuGaZorETW8kaV"><b data-page-node-id="ApXHUeOwEeDJOTBl9Zgaym">唐史</b> 唐朝史研究生</span>
+      <span class="chip" data-page-node-id="FpdlrlzP850xr4A7txayBg"><b data-page-node-id="yI9yH45HmmysbvnNorTsOG">学生</b> 大二，AI 辅助做桌游</span>
+      <span class="chip" data-page-node-id="pEG7Br1UzPvRvt2aZ6akC4"><b data-page-node-id="HoVGaUkxX4wacbLoCmWDXi">杭</b> 杭州，轻度桌游玩家</span>
+      <span class="chip" data-page-node-id="8SgTtPYaw90rw6OoERibDr"><b data-page-node-id="Ftg50kFfRFCoBqwNRtMzFt">石</b> 石家庄，桌游高手·多人向</span>
+      <span class="chip" data-page-node-id="Gwve7Ns8oUS3kTIs213qRf"><b data-page-node-id="n2CH53Z3Pw0KVbdFYVteeK">北大</b> 北大留美打工人</span>
+      <span class="chip" data-page-node-id="9Z7xqZ8H0TLIanVTuiv40S"><b data-page-node-id="BV33qjrwj1PMk3gHaUvSrG">晋</b> 山西</span>
+      <span class="chip" data-page-node-id="VLGpzdOupVD1HSFvn5D5Ch"><b data-page-node-id="bBFOedsaQHr9tTs5RGFRBh">赣</b> 江西，信息奥赛教培</span>
+      <span class="chip" data-page-node-id="J7o116ajPACsSzTMt7P41i"><b data-page-node-id="osJYtnSnqJBb4cwA0d4igt">秦</b> 秦皇岛，财务</span>
+    </div>
+  </section>
+
+  <!-- 一、玩法框架 -->
+  <section class="block" id="s1" data-page-node-id="rRjCoy8xsf0lOCQdohAnIC">
+    <h2 class="sec" data-page-node-id="kZ5slSDDBFkP9msO1F8Ylq"><span class="no" data-page-node-id="2nKBrEXv5tQXcJ9yj7xaUC">一</span>玩法框架（核心交付 1）</h2>
+
+    <h3 class="sub" id="s1-1" data-page-node-id="L3grnc9VLbLhAZCxXGRLGB">1.1 总览</h3>
+    <div class="flow" data-page-node-id="c2JiXOmUAPyPNy0L7bzlUh">
+      <div class="fnode stage" data-page-node-id="H91nugj7XHEQnMURZ1GJND"><div class="t" data-page-node-id="9l4D1VQcnLY5iDZPYzAAVR">时空尺度</div><div class="s" data-page-node-id="V5EfZ6DzYeS8T8TamFhaDJ">宏观 · 回合 1–3 月<br data-page-node-id="PnEokge9raUvkhfBzDwthV">中观 · 回合 1 天–2 周<br data-page-node-id="npjYC1ue6ZiG3bBywQQ5LS">微观 · 单点战斗</div></div>
+      <div class="farrow" data-page-node-id="JPsQI7d4u9mlpwbFjEnt5r">→</div>
+      <div class="fnode res" data-page-node-id="DXEA13nflWRYC2kR1uUAqo"><div class="t" data-page-node-id="BCah0FsLwf19ajQiMrIJpU">资源体系</div><div class="s" data-page-node-id="vMfHa7RhPkEDFQQfcryhaV">物质资源 → 兑换 → 战斗资源<br data-page-node-id="2uQUTVFcFGyzo7xBvtsqmu">物质资源 → 转化 → 其他资源</div></div>
+      <div class="farrow" data-page-node-id="BhrnJcBGzvZyDPgxZhZfJn">→</div>
+      <div class="fnode layer" data-page-node-id="gjD4YgbDvxFJwqSg3lTdVS"><div class="t" data-page-node-id="gHBiH9txkfPVgoCuiagA8Z">玩法三层</div><div class="s" data-page-node-id="vHOv97w3TFHXAXdcYvO2QP">战略 · 资源管理<br data-page-node-id="NdgGfUDTSp9mBkC1gN9pH7">战役 · 时空移动<br data-page-node-id="WC3yfKCcFcZzzo7TZXehum">战术 · 战斗结算</div></div>
+      <div class="farrow" data-page-node-id="PQFu0ggBy5y9Dh2NjmzHjh">→</div>
+      <div class="fnode flavor" data-page-node-id="GVNvPsuovqpp3bZwzMBOyR"><div class="t" data-page-node-id="Qhn5cIZo96BXuztznaR1nD">风味层</div><div class="s" data-page-node-id="B0OANvFxtDq80s2mlh4Zw4">随机事件 / 养成路线<br data-page-node-id="MGvGobuse4F2kh7bLFwNfP">背景故事 / 美术表现</div></div>
+    </div>
+
+    <h3 class="sub" id="s1-2" data-page-node-id="bssHGFz1fqnDM66AA30lbN">1.2 时空三尺度 <span class="st st-ok" data-page-node-id="HRTyQte1RWm7PJKFCEUGEa">✅ 框架成立</span> <span class="st st-warn" data-page-node-id="TywH1wq6kq6GCVZEA0L6fH">主舞台取舍 ⚠️</span></h3>
+    <div class="tbl-scroll" data-page-node-id="KSKlGAObskFgcf2MrOpMK9"><table data-page-node-id="foZbakETHHWbEJZxBKowWy">
+      <tr data-page-node-id="gTu7NdBsndB0Mi6OLHdzun"><th data-page-node-id="IChFqSr0KyyHkRUwLDCUIm">尺度</th><th data-page-node-id="q3EBEACGaEXW5loeTAGstP">回合粒度</th><th data-page-node-id="z6eXkozOp8W6EmHFesfaCr">玩家操作对象</th><th data-page-node-id="4Z7BAUS8CH59feb7cGKoaB">参照游戏</th><th data-page-node-id="hEtmQs3qtfBTgrSWPsWDOZ">状态</th></tr>
+      <tr data-page-node-id="DUSguwLN1HxHyw90Gz5WTV"><td data-page-node-id="amOKEW2zAxJQQcdq9IYHSd"><b data-page-node-id="axx9nWHW4J2ZNhmIuHR4C6">宏观</b></td><td data-page-node-id="vGCVnkQyCVdQH4bLWBBCIl">每回合 1–3 个月</td><td data-page-node-id="qpuquUfG8LpBkwiOnwKQ8k">管理经济/资源/组织/作战单位；大方向操作，较少微操（"撞一下兵就打完"）</td><td data-page-node-id="fH7TyjNk3mYKrOGvvbc2gk">📎 战火中的世界（二战桌游，法国横向 6 格）、Unconditional Surrender!（法国横向 12 格）、全战帝国/拿破仑（法国仅 1–2 个主城）</td><td data-page-node-id="lenHFn8oKeO30Dc393HCQn"><span class="st st-ok" data-page-node-id="C3yX3ccmbshTB9qDO0Xbtg">✅ 定义清晰</span></td></tr>
+      <tr data-page-node-id="mUn6l0lxPUTIu72ehyyskV"><td data-page-node-id="fRa5oK3IyEuGEFxxIQ4ShX"><b data-page-node-id="unWvwgw7H2yDnwzSXKOimm">中观</b></td><td data-page-node-id="fFPnE8Cbe4TSZ51hA1Y2TC">每回合 1 天–2 周</td><td data-page-node-id="9E7PHdX5cuTrehSumxeQC5">资源管理任务下降，偏向时空移动</td><td data-page-node-id="iR3J3BRaCp66GV5t17JQx1">📎 英雄无敌 3（1 天/回合）、三国志 9（1 周/命令）</td><td data-page-node-id="aWCnu2O7PkNbPk3Bsh3NAt"><span class="st st-ok" data-page-node-id="MtyqwE0QMsQdmq24eofUoX">✅ 定义清晰</span></td></tr>
+      <tr data-page-node-id="ImBFDAWWbBkRIWAN6yJhgn"><td data-page-node-id="saHiu5xGiI7hErJbquJhLw"><b data-page-node-id="ul7zNO48R6IxpGFYjMdMDk">微观</b></td><td data-page-node-id="IIUJkQ8cctGTReq63LbxJh">单点战斗</td><td data-page-node-id="szzf5GlTUC62V8a9fIRpwE">在上述地图某一点展开战斗，常见关卡式、侧重临场战术</td><td data-page-node-id="JfDdAG5up4NACA7m5DrPHe">📎 英杰传系列、统一指挥 2（"有一万个 DLC"）、超级机器人大战系列、圣女战旗、终极将军：内战、指挥大师</td><td data-page-node-id="UGJINffE4FZpOdMq1SPe0F"><span class="st st-ok" data-page-node-id="AvcgKGQgn07eROjJYvYPvi">✅ 定义清晰</span></td></tr>
+    </table></div>
+    <blockquote data-page-node-id="rh1jD3kj7GrssefL5MvDwc"><span class="who" data-page-node-id="Zr5goWlhmJtMzqAARRGWxB">⚠️ 未决</span>本作以哪一档为主舞台？——关联决策矩阵 D6。</blockquote>
+
+    <h3 class="sub" id="s1-3" data-page-node-id="2pDDKz7nxIZOA8HAHWfGbL">1.3 资源体系 <span class="st st-ok" data-page-node-id="p4QKXFKqWKr8QOWozF7bqT">✅ 三分法成立</span> <span class="st st-warn" data-page-node-id="yR6ZzvSEw8slqH8ZJUmNqJ">数值 ⚠️</span></h3>
+    <pre style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:13px;line-height:1.7;overflow-x:auto;" data-page-node-id="kNgBPlZ18XSDONW2EipOux">物质资源（钱/能源/魔法等货币）
+   ├── 兑换 ──→ 战斗资源（单独设计兑换比例）
+   └── 转化 ──→ 其他资源（用钱爬科技、用钱买牌）</pre>
+    <div class="tbl-scroll" data-page-node-id="AL1b8bJkURCXTsG7Pm9hAm"><table data-page-node-id="TR0ec4KDBQnaWCikheaVwx">
+      <tr data-page-node-id="RAHw7nwzQwyBMcb5W1InfH"><th data-page-node-id="0Tkr6NmPICwLvSfKbX9qDM">资源类型</th><th data-page-node-id="f0RR8kOT22Mi8uP8l6M9nE">内容明细</th><th data-page-node-id="0hmlmTTI6GH1V07CDROzel">参照游戏</th></tr>
+      <tr data-page-node-id="WnuGVFoqSCqNsoIAZOKRQU"><td data-page-node-id="95jVJTQgwzok89nOUiDGf4"><b data-page-node-id="dPJgEFBfjj44qxsmj9bm9l">物质资源</b></td><td data-page-node-id="yLo8aZ4vcaJE5MGJVMoVkX">"钱"、能源、魔法等货币，可转化为战斗资源；需单独设计兑换比例</td><td data-page-node-id="lJ5TV7pQch3703nX1707iZ">📎 钢铁雄心 4（用枪买兵）、欧陆 4（钱+人力买兵）、strategic command 系列（一种钱买所有东西）、战火中的世界</td></tr>
+      <tr data-page-node-id="bzykxeBqDG2ZMujBGo7e9g"><td data-page-node-id="2RrjHcsP5IJ6Z0QebGfAE9"><b data-page-node-id="JrKy99Ixb5IkEW6CY1h9YE">战斗资源</b></td><td data-page-node-id="IBV0l2Nn8TCaq1TJBvE6iH">① 战斗单位：根据敲定的玩法模式关联合适游戏背景，以此设计单位、人物<br data-page-node-id="wb87uUAwVB7RxpkreMMnS3">② 特殊角色：属性、物品、道具、技能、人物槽位、人物间关系（从属关系、羁绊等）<br data-page-node-id="XVZJ1M6Jyey9MXJG7hR8kM">③ 战斗获得的资源：缴获（钢铁雄心）/ 劫掠（全面战争）/ 俘虏（统一指挥）/ 额外奖励（机战系列）</td><td data-page-node-id="Pf73fZIdvXu1mwvlK5OICa">📎 见右侧各例</td></tr>
+      <tr data-page-node-id="lf0GCDQQL0nHY2ckfrAdSE"><td data-page-node-id="A53nlTwPvmsBXeh9c3aI0q"><b data-page-node-id="6RU44EYdXh9rkkJSDPE7wT">其他资源</b></td><td data-page-node-id="nDn5uZ5yysHdXv1DJ7nMV7">天气、环境、科技、卡牌、特性、外交政治状态等；可由物质资源转化，也可单独作为游戏核心资源（如卡牌）</td><td data-page-node-id="w7idgJiuIxfZJ6TYcEHVUY">📎 桌游：光荣之路、教改风云、汉尼拔：罗马 VS 迦太基</td></tr>
+    </table></div>
+    <blockquote data-page-node-id="g56vhyxFh6KwKQ7FpymWCU"><span class="who" data-page-node-id="gA3uOHZo7goqgXjl1ghiE4">⚠️ 未决</span>资源组合方案与兑换比例数值（需原型沙盘验证，可复用 <code data-page-node-id="IpvGmVG5MPKfar7GooI289">03_prototypes_and_tools</code> 工作台）。</blockquote>
+
+    <h3 class="sub" data-page-node-id="Xo3UtaOJPK6QmP5vpzQyhX">1.4 玩法三层 <span class="st st-ok" data-page-node-id="1Qul6tWD6BBQUdFrJKNrG8">✅ 框架成立</span></h3>
+    <div class="tbl-scroll" data-page-node-id="dxHeFOgGJ55wYIHQanj0iM"><table data-page-node-id="9hRWKNt1BrhKwH9Vtwbc9x">
+      <tr data-page-node-id="A6Feft23pTeAqCOZBnHI3O"><th data-page-node-id="HexZDINlFo9CV7gEiVsyc2">层</th><th data-page-node-id="2LpltKFjMui3kcuGheDCba">行为定义</th><th data-page-node-id="F6PtSR8AjikOHDovbHqH8N">承载内容</th><th data-page-node-id="sis65BZB78U1Q76rC6U4DG">状态</th></tr>
+      <tr data-page-node-id="lTkDiEPXQF7QuUrMgnLMLU"><td data-page-node-id="UT62h6tYAoWdF5TAXUKPbO"><b data-page-node-id="8n7sdNwZekICE6x3umJRz8">战略</b></td><td data-page-node-id="43Za9xcuQcbwwkligxU9H6">资源管理</td><td data-page-node-id="ZFHuFaMckL4FbrBkJ55jZm">① 货币直接转化的战斗资源 ② 养成型资源：科技/理念/技能/特性/角色属性 ③ 独立的抽象资源：卡牌/道具</td><td data-page-node-id="vtNNMk6ipfwmKEgFpYyQZg"><span class="st st-ok" data-page-node-id="SpyaDaMvM0DN7GDEvxPusm">✅</span></td></tr>
+      <tr data-page-node-id="VErDk1kC0Uit3J3EX5Mjp0"><td data-page-node-id="hOFczpE9tAfbSZp3ttx2nO"><b data-page-node-id="qsXD2Iy3ND75fGZBpyF8Kp">战役</b></td><td data-page-node-id="4pVYluPlamv7xeCuHsE6aO">时空上的移动</td><td data-page-node-id="wQLK2R5SeAkoXvggE7JEIV">P 社游戏、全面战争、三国志 9、英雄无敌系列走地图撞兵；过关类 SLG 的关卡模式</td><td data-page-node-id="3UHcoss7YA5ktZTYre7HSy"><span class="st st-ok" data-page-node-id="wUwPRumBmVpyOHVNe7cBf7">✅</span></td></tr>
+      <tr data-page-node-id="p9DUf6OxKn13hsZ1eWj6Nh"><td data-page-node-id="HBp1NZj1svN1Za8VDBiN7T"><b data-page-node-id="2rHi5BxRjMT2nSPo2ybMS4">战术</b></td><td data-page-node-id="VwvCcdsA1Q7ACvZYpxy6SN">如何结算战斗</td><td data-page-node-id="6sOrI5fRbZRldyBLuFB2ir">见 1.5；战后影响见 1.6</td><td data-page-node-id="RmlWwgn8OtiOs3duaDX64y"><span class="st st-ok" data-page-node-id="tTJk0y5D65e6FAkkSCodY0">✅</span> <span class="st st-warn" data-page-node-id="4UvdiaDaL9711H3bNZ38Hj">方式 ⚠️</span></td></tr>
+    </table></div>
+
+    <h3 class="sub" id="s1-5" data-page-node-id="fKSuCA488O47vVs44HYpDq">1.5 战术结算——定输赢 <span class="st st-warn" data-page-node-id="OdzqfpPI1BFgKAJerajc3Y">⚠️ 核心分歧区</span></h3>
+    <p data-page-node-id="88eFEqBGS1vsYPYmy837Lp"><b data-page-node-id="2pnmCouABgBEg99YYJ04Vl">式 ①：以"整坨兵"的属性为锚点，在地图上统一移动、统一结算</b> <span class="st st-ok" data-page-node-id="TqaM4Bf4J3Mf9flvZ9Judy">✅ 作为通用底座</span></p>
+    <ul class="tight" data-page-node-id="GdsWbSGMVaPAIoiLWWUuF2">
+      <li data-page-node-id="MJXTnSgGLU0jIC9CMKDO8K">影响因素：战斗力、地形、特性、道具、天气、随机数、卡牌</li>
+      <li data-page-node-id="bNjQpavSKJ71H4REDF5Dy0">最简单形态：整坨兵 = 单一数值（X 点攻击、Y 点血量，整体发挥作用）——📎 教改风云（稚嫩的魔法师制作的桌游）：一坨兵提供 X 个骰子，一次掷 Y 个，按规则和道具结算得 Z 点伤害</li>
+      <li data-page-node-id="UlHb154B5wVV18OxaH0XCR">可拆分形态：P 社式——30 个兵 20 个参战，10 前排 10 后排，不同兵互打（📎 CK2、EU4/5、V2/3 均采用类似机制）</li>
+      <li data-page-node-id="HY3AyeF3MRfKjGK0pR510p">适用：战略/战役地图（一般地图类游戏的"大地图"）</li>
+    </ul>
+    <p data-page-node-id="KzB0MTu1VC48qTz6WjQori"><b data-page-node-id="AlNdiab6fATC0PziVCS1iq">式 ②：大地图上单位直接行动</b> <span class="st st-ok" data-page-node-id="hOAaa11Mna3fHFpw1FvH4z">✅ 存在共识，作为补充</span></p>
+    <ul class="tight" data-page-node-id="YlUn9BBuOwkvWosscmAXZZ"><li data-page-node-id="BgVCt0Nu0WymqQGD81QDKB">📎 easytech 欧陆战争系列、strategic command 系列（电子桌游）、P 社钢 2 手操空军、EU4 的 50 点炸城墙</li></ul>
+    <p data-page-node-id="EestnvEXvYc08wAm8PDUto"><b data-page-node-id="AaWcDmimfeUsfcbZnvIWwA">式 ③：小地图战术战斗</b> <span class="st st-warn" data-page-node-id="WK6gP1onG2pAtlublqpI3x">⚠️ 是否引入未决</span></p>
+    <ul class="tight" data-page-node-id="CVLSgbGeNWaS4OmWut7PnH">
+      <li data-page-node-id="FdZPstplLBelaY1ubodIdf">四节流程：地图/关卡（可特化：攻城、水战）→ 布阵 → 行动 → 结算</li>
+      <li data-page-node-id="AzrVdHFNU5bX1HHToQHGKb">特殊战斗模式：互相打牌（📎 汉尼拔：罗马 VS 迦太基）</li>
+      <li data-page-node-id="YHtFhzcFpwDo0ngh6mF5Qj">📎 参照系：field of glory 系列、great battles of history 系列（桌游，森手头有一盒）、汉尼拔、线列战争、终极将军：内战 / 指挥大师（含养成）、valor &amp; victory / second front（一战二战电子桌游）、欧根（出处：晋 Q3——"欧根那种战役走格子，战斗没格子的"）</li>
+    </ul>
+
+    <h3 class="sub" data-page-node-id="4Jw4tyXO9Ow1Uxde2HZ6so">1.6 战后影响 <span class="st st-ok" data-page-node-id="5SF53MO9oX3fJePcPqL7BH">✅ 确定</span></h3>
+    <ol class="tight" data-page-node-id="CaONDYVIhKGCwSAMTPQMHM">
+      <li data-page-node-id="yWP6xWt3mw156kNDMHEotF">战斗/关卡奖励</li>
+      <li data-page-node-id="COIsotI4G2Hr4uuMNf9sne">对大地图的影响（战斗输赢影响地图区域政治控制权）——📎 信长之野望最新作"大威风"、汉尼拔：罗马 VS 迦太基</li>
+    </ol>
+
+    <h3 class="sub" data-page-node-id="NyM5i3IKZDQzzF4RVXfD6E">1.7 风味层：可触发内容 <span class="st st-ok" data-page-node-id="a6c4PLw9bCFGj4OEO1YdXG">✅ 作为设计支柱</span></h3>
+    <p data-page-node-id="RLPi5A7EsvI01PARdzNbPC">随机事件、养成路线、背景故事、相应的美术表现。</p>
+    <blockquote data-page-node-id="Qek7KJKOK8AiCMEvX4D4cg"><span class="who" data-page-node-id="59ETUBeAKCp8VTmxe9SIUg">⚠️ 反面教材</span>SGS taiping（太平天国题材）——做了风味但没做好。</blockquote>
+
+    <h3 class="sub" id="s1-8" data-page-node-id="7IPGQMWGeZ7BNXj4NlNI77">1.8 框架状态汇总</h3>
+    <p data-page-node-id="ZatXU2IsH7WY0zOfYgF0NG"><b data-page-node-id="qN3T49JCNNGEvnHfZnU3hC">已确定（✅）</b></p>
+    <ol class="tight" data-page-node-id="QxoVutyHgiRHpWu7EEzjuA">
+      <li data-page-node-id="BBGDKApgoKvKjevVA4WfTv">时空三尺度作为分析轴（1.2）</li>
+      <li data-page-node-id="SRcdCZQ7s3zXGHgDDdC6jI">资源三分法：物质 → 战斗 + 其他（1.3）</li>
+      <li data-page-node-id="dDukHNtAOywIQxWd0xdqmr">玩法三层：战略/战役/战术（1.4）</li>
+      <li data-page-node-id="bGI9bhohTr6PzhVGbojeHS">战术底座 = 整坨兵统一结算（可拆分）+ 大地图单位直接行动（1.5 式①②）</li>
+      <li data-page-node-id="w5mBMGFcYeDClDil53RJtC">战后影响双通道：奖励 + 大地图政治控制权（1.6）</li>
+      <li data-page-node-id="BHVVyktzX7LYcKuCoiMFPs">风味层存在且需要做好，否则是负资产（1.7）</li>
+      <li data-page-node-id="n4qukVcl0UoQGKdvAwnD2e">城地表达：一城占一块地，城上/周边建筑影响作战地形（决策矩阵 D5）</li>
+    </ol>
+    <p data-page-node-id="8YotnsprLGBYDbZpwbfB2q"><b data-page-node-id="llxThn965V0H3Ooa6HIErg">未决（⚠️）</b></p>
+    <ul class="tight" data-page-node-id="ZeYS8jsq4PaKADV9yxOUV8">
+      <li data-page-node-id="s8N6AdYw7LfNDImnjNBBmm">主舞台尺度：宏观独走 or 多尺度贯通（D6）</li>
+      <li data-page-node-id="gzntVJ7bCBmQN3cl2HVxtG">是否引入小地图战术战斗 / 双轨（D4）</li>
+      <li data-page-node-id="vlOHatwvbDOjkeAPRVcGTc">资源兑换比例数值（D2）</li>
+      <li data-page-node-id="Feuvy2ZBJg5SdVskMz1pRf">回合节奏分代数值（有秦的基准提案，D6）</li>
+      <li data-page-node-id="LvByqTj4wFfY3YtlRjX0CE">题材国别/冷热（D1，需市场验证）</li>
+    </ul>
+    <p data-page-node-id="eM6sEOD7BiICEfGsw2hoHP"><b data-page-node-id="Tp9Ys63NO26L2ax7NwapFv">参照系（📎）</b>：见各节标注，全部保留不删。</p>
+
+    <h3 class="sub" id="s1-9" data-page-node-id="InbHoWYeMCTIXx1yT7zI5U">1.9 参照游戏总表（上游"有借鉴参考价值的游戏"全量保留）</h3>
+    <blockquote data-page-node-id="tY9k3CFMCXpmAEdfufd3O2">上游文档第五节逐项收录，作为选型的横向参照库（含电子 + 桌游）。</blockquote>
+    <div class="tbl-scroll" data-page-node-id="Fz4a27G6xKeRHnvsP17M92"><table data-page-node-id="xpjWTnYcSOpwlkRQ0BhvJY">
+      <tr data-page-node-id="D5YMGjEOGn2KqCgDspEliM"><th data-page-node-id="YfR63wS19yKmcywqsHEMwU">参照维度</th><th data-page-node-id="SLFRbIw8K4XXYot0KwNUmp">作品清单</th></tr>
+      <tr data-page-node-id="aZGYAPMGojfIQ2y0fFk31o"><td data-page-node-id="mfZZuFq8FGrogFydgsopCG">通过"货币"转化资源</td><td data-page-node-id="l0mAyzxD1scMrYByUyauUN">各类大战略游戏；strategic command 系列（电子桌游，<b data-page-node-id="E6GYGEr1WIVmEF52omd1ac">一种钱买所有东西</b>）</td></tr>
+      <tr data-page-node-id="kUrRoxFEYdQ0q7ZOvjnBCY"><td data-page-node-id="zFO1m7wc6kx8sOj04q4h8o">养成型资源</td><td data-page-node-id="jAAUD66g1AlaBYgiN4RKIP">英杰传系列、超级机器人大战系列、终极将军：内战、指挥大师</td></tr>
+      <tr data-page-node-id="cu5XsLNHGHtb6HUstFb5QY"><td data-page-node-id="1OSSbJVlc45cbYkG7AvwtW">卡牌/道具等抽象资源</td><td data-page-node-id="JWqu20jbxKPFmlViMoBf39">桌游：光荣之路、教改风云、汉尼拔：罗马 VS 迦太基</td></tr>
+      <tr data-page-node-id="q1M11U3YJ5QNFDKNBoyLx9"><td data-page-node-id="CdSWbMrkBOPVBk1omTvSPB">桌游改电子游戏</td><td data-page-node-id="21dycEKIHPkICPXkxxrWUz">victory &amp; glory napoleon / civil war（拿破仑与美国内战题材）</td></tr>
+      <tr data-page-node-id="0sH35boeIbP3vo4h0sLdHu"><td data-page-node-id="omdQSMGIiak1AN5uDFU6KV">时空上的移动</td><td data-page-node-id="YPSFyXKz7DiQeZ6PtN16Cm">P 社游戏、全面战争、三国志 9、英雄无敌系列</td></tr>
+      <tr data-page-node-id="T7dyagv18BmrGbHtDCRuwb"><td data-page-node-id="EkphEKxG9AO51GK2COct0C">整坨兵撞兵</td><td data-page-node-id="bu0fanpHooPBO9KD8iIG3G">P 社游戏、全面战争（使用自动结算）、教改风云</td></tr>
+      <tr data-page-node-id="MV3JdOAYmqGCkI9Ml8bpsH"><td data-page-node-id="6qFeKvRdtc4NGk6mC9hyC9">大地图上单位直接行动</td><td data-page-node-id="i8qBnBPiMWnbj0U5Zwrtgp">easytech 欧陆战争系列、strategic command 系列、P 社</td></tr>
+      <tr data-page-node-id="5bakLWjAnANXfjqSsCPFYZ"><td data-page-node-id="LJQ1TVDl1qxYXVns4cZx2J">小地图战术战斗·古代—中世纪</td><td data-page-node-id="Paik8Hzi1YZgqyjqLOalLx">field of glory 系列；great battles of history 系列（桌游，森玩过一些且手头有一盒）；汉尼拔（特色战斗）；线列战争（EU4 后期排队枪毙）；终极将军：内战、指挥大师（含养成）</td></tr>
+      <tr data-page-node-id="RSyzkEa6dKReZ7HR78L5iz"><td data-page-node-id="1nAI2chnr25ygXNOX0nG7p">小地图战术战斗·20 世纪前期</td><td data-page-node-id="a497IDzBSxbNxKyzS12ht0">valor &amp; victory、second front（电子桌游）</td></tr>
+      <tr data-page-node-id="NKeBjxzV9Ws5xrkqnjdRiI"><td data-page-node-id="tE5SNdgcV4orLfjJqAMjcK">战后影响</td><td data-page-node-id="6u9pBE3CVrsCdLHm51f6ks">信长之野望最新作"大威风"、汉尼拔：罗马 VS 迦太基（战斗输赢影响地图区域政治控制权）</td></tr>
+      <tr data-page-node-id="ObYuwz3ByieHi7hCF2k273"><td data-page-node-id="T1GcBBvXs15c852uWaF5ap">风味反面教材</td><td data-page-node-id="ZwxDm2hUvXyFm2LFvsHZS7">SGS taiping（太平天国题材）——做了风味但没做好</td></tr>
+      <tr data-page-node-id="uOOD7Wk7XdiHCxLeK3A2FN"><td data-page-node-id="WLvVxXXpzI25OXIKAXAPgU">相关视频</td><td data-page-node-id="TvJTg946qPtsyDaToKAaip">B 站 <a href="https://www.bilibili.com/video/BV1dYFXecEuu" target="_blank" data-page-node-id="j0lqYoC0wbGfdNBMM5CuCJ">BV1dYFXecEuu</a>（聊"这类桌游"的视频）</td></tr>
+    </table></div>
+  </section>
+
+  <!-- 二、调研根因 -->
+  <section class="block" id="s2" data-page-node-id="WaXRhwDTv3O9hhLm6ZpEEy">
+    <h2 class="sec" data-page-node-id="mcUY1vigHdGC0HXnhOZdKG"><span class="no" data-page-node-id="HXetdIFZe8biMh5KGEQReB">二</span>调研根因归类（核心交付 2）</h2>
+    <p class="sec-desc" data-page-node-id="VNKh0VFakCcIoxBZCvBBSZ">方法：不按受访者罗列，而是把回答背后的驱动原因归纳为主题。每个根因给出：根因句 → 支持者分布 → 原文证据 → 设计含义。</p>
+
+    <div class="rc" data-page-node-id="QAoBPrHz4Qi6dCff1lDQGH">
+      <h4 data-page-node-id="3aBXDSFBR14duvuZSLYpbB">R1 考据即沉浸：出戏 = 系统级失败</h4>
+      <div class="who-line" data-page-node-id="7GtK5M4Y8Pf3mbkjQgHccy">支持者：<b data-page-node-id="xbAje0aGrmtocvXBpfzdIG">唐史、赣、学生（大二）</b></div>
+      <div class="claim" data-page-node-id="opzGkjXhNkL7KySB756qiv">玩家的"历史沉浸"依赖系统层面的可信感（数据细致、机制可推演），表层考据错误会瞬间击穿沉浸；历史要素宜"捕风捉影"式点到为止，忌过度设计喧宾夺主。</div>
+      <ul class="tight" data-page-node-id="79ZIA7ZT5XAg8iRHdA55eh">
+        <li data-page-node-id="y6QiHc75PGlvKDDS22oKNE">唐史：<em data-page-node-id="AEVYHDHzc5o2XS6oqoozEC">"国外，因为国内的考证总出戏"</em></li>
+        <li data-page-node-id="rNHZqZ057oohgOpqQ2TKg1">赣：<em data-page-node-id="Qh9QcNV3EiO5uNLZZIeu3N">"历史感带来的沉浸"</em>（评文明/全战"沉浸不如欧陆"）</li>
+        <li data-page-node-id="MQHILzUQEzQpLbgPIEa55R">学生：<em data-page-node-id="g4sEQjZ1IMviOMDAAgrw6F">"欧陆风云这类游戏通过足够细致的数据和可操作性给玩家提供了一种假装自己能模拟历史的错觉"</em>；<em data-page-node-id="6NvVRIFz9uIO9JW7A6lYK7">"假装这个游戏很严谨，历史的各个要素能够捕风捉影出来，但是较少过度设计喧宾夺主"</em></li>
+      </ul>
+      <div class="imply" data-page-node-id="cKnnFsQH0nwUkSBs5aVkSt"><b data-page-node-id="j6yrujhgsND8QRCnJZQZY6">设计含义：</b>机制先行、考据支撑；"错觉式严谨"（plausible simulation）比"百科全书式堆料"更值得做。</div>
+    </div>
+
+    <div class="rc" data-page-node-id="9tlnGOwor2bdzzHDRoTNoF">
+      <h4 data-page-node-id="wepL8x9MlRPHUXH8boBVu1">R2 将领价值随时代衰减（"汉尼拔 vs 骰子+1"分界论）</h4>
+      <div class="who-line" data-page-node-id="jyfTflVk7Hsll18j46inmw">支持者：森（提出分界线）、唐史（支持但克制）、杭（支持但忌过头）、学生（条件式）、北大（支持，为 MOD）、晋（支持，为营销）、秦（支持，要求质数量平衡）——分布：<b data-page-node-id="GgStlENsph6oA1X62dS2ub">倾向"特殊但克制" 7/9，明确反对 2/9</b>（石、赣）</div>
+      <div class="claim" data-page-node-id="kHYWcHbvpX0YEA92QhH6iz">将领特化的接受度与"个体影响力是否匹配历史直觉"正相关——越古代个体英雄越可信，越现代越出戏；RPG 化是光谱而非开关。</div>
+      <ul class="tight" data-page-node-id="voEEHismfSjgALCv1Oof64">
+        <li data-page-node-id="ENa6Cpm1i7PAE5lUl6DpuS">森：<em data-page-node-id="iKVUsW2OPYOikNtDWbBrQx">"2000 年前的汉尼拔逆天改命，2000 年后的德军名将骰子+1，显然前者更有意思"</em>；<em data-page-node-id="8EbNCujOu6DyitvxejvrGm">"以拿破仑战争左右为分界线，以前将领更有用，往后将领更没用"</em></li>
+        <li data-page-node-id="wiwBDgAQJLzI52TPsMlHk5">唐史：<em data-page-node-id="T9wwTRmBERzFiBqBfyiYeB">"欧陆的将领已经很强大了，应该让强大将领更珍惜一些"</em></li>
+        <li data-page-node-id="UWtuaCSuCSHOz9JslAh5xk">杭：<em data-page-node-id="zoQRAJD2c7MDDLfQfGDG8l">"将领还是需要有一些自身特色，但是全战三国那种属于过头了"</em></li>
+        <li data-page-node-id="RiqF5KbffAZxEDAIqeQpwc">学生：<em data-page-node-id="YgQnz4WTJVFD5t4TNcJBKR">"如果这个游戏主打沉浸，希望；主打推演（严肃），不希望"</em></li>
+        <li data-page-node-id="jrdmH6M8AyOTbUm7Sugybu">晋：<em data-page-node-id="YE4E16ir4ls5IBrdCk29pj">"将领肯定得特殊点，有将领很适合忽悠轻度玩家来买"</em></li>
+        <li data-page-node-id="KKNEyxmp7OAMD4XOPL8NRD">秦：<em data-page-node-id="ZRb8os6VWkeZHmxjTZKdga">"希望，但希望质量和数量能做出平衡"</em>；北大：<em data-page-node-id="BVjWkz4so8pNBlfEA8LT8Z">"pc 的话希望将领特殊 方便做 mod"</em>；石：<em data-page-node-id="DLJpHxyOSrnXmRLT8eaFn9">"不希望"</em>；赣：<em data-page-node-id="Y7GYvpAwLDuC7RzRpkNr8V">"大部分时候不希望，太 rpg 了"</em></li>
+      </ul>
+      <div class="imply" data-page-node-id="dlcE7dVT8pkqbGyavnk3W7"><b data-page-node-id="G1AKabS33YQ9FBheabzkaP">设计含义：</b>✅ 方向确定——将领特殊化 + 时代调节权重 + 稀缺感（"珍惜"）。RPG 度上限参考"杭"的判据（别学全战三国）。</div>
+    </div>
+
+    <div class="rc" data-page-node-id="6Ksp1DPE9MpcR8tO4etuKR">
+      <h4 data-page-node-id="OhUC8zSlaKJmWReGB6Pof6">R3 地图抽象 = 通行容量与制作成本的权衡</h4>
+      <div class="who-line" data-page-node-id="NEH0Kxrg0k7pFFbrHneXO4">支持者：森（六角格）、秦（容量论）、唐史（方格更省事）、晋（菱形或隐藏菱形，视地图层级）、石（分级&gt;区域/点对点）、赣（历史模拟无格，类文明菱形）、学生（有格子+会战机制）、北大（不本质）、杭（未直接作答）</div>
+      <div class="claim" data-page-node-id="bR7uNFcGfZaYYPerWiSDMP">格子本质是"地区在单位时间内可通行和进入的容量"的可视化；六角格在距离上最诚实；无格/区域划分对制作者的信息成本最高，收益仅在特定玩法成立。</div>
+      <ul class="tight" data-page-node-id="voUSFnObybSsHomYVD9plp">
+        <li data-page-node-id="zOwYYUZGJxbNeGagAiZTEa">森：<em data-page-node-id="36T8n3moT5ECTlpcVm7qrp">"如果要拿比较拟合现实时空的话，用六角格（文明）是比较好的，真正意义上的距离均等。如果主动划分，查找地图资料并结合游戏需要进行划分其实是非常困难的工作"</em>（出处：<em data-page-node-id="X8Wo1Zl1WM68KWTaeSraJo">"我记得看过一个文章"</em>）</li>
+        <li data-page-node-id="pcCqr7MFLLU3gMgS2qyA3g">秦：<em data-page-node-id="P9uMXqgqVbifCv7APeCZVG">"方格和六角格本质代表一个地区在游戏单位时间内可以通行和进入的容量，如果有规划甚至可以点对点自由花线"</em>（原文作"花线"，疑为"划线"笔误）</li>
+        <li data-page-node-id="M0yrSacHJ9cgkvsHmsg149">唐史：<em data-page-node-id="zRDrzar1A6HRMx3GDXvZwr">"方格更方便，地区划分对划分者要求过高"</em></li>
+        <li data-page-node-id="6G9D99IpIZWsBbVO8u8zIL">晋：<em data-page-node-id="j0VgfLSIMGvjkcrbeSPXal">"菱形或者隐藏菱形吧，我觉得得取决于是大地图还是战斗地图。欧根那种战役走格子，战斗没格子的可以考虑下"</em></li>
+        <li data-page-node-id="EP1eGERvSwG2ylulBiUe4L">学生：<em data-page-node-id="TJDQUEBqEXx2iBDWB4KOTF">"更喜欢有格子加会战的机制（一战以后除外，更喜欢格子加战线机制）"</em>；石：<em data-page-node-id="nkZaRiqfoK22eisokHUzVn">"分级最好，区域/点对点次之"</em>；赣：<em data-page-node-id="xmkNj6gX107J2DEdjGQX3N">"历史模拟倾向没有方格，类文明的游戏菱形"</em></li>
+      </ul>
+      <div class="imply" data-page-node-id="QgpUxAEha4E2vdCse1BB9I"><b data-page-node-id="Iifr0AN2qA8UTHBeK3CdMg">设计含义：</b>✅ 倾向六角格为主（森明确 + 秦的容量论补强）；战斗层是否无格留口子（欧根式）；点对点自由划线可作为远期扩展（秦）。</div>
+    </div>
+
+    <div class="rc" data-page-node-id="SPfqkVuDUMe39uQPMNFNop">
+      <h4 data-page-node-id="OxwjOKIE1mutmIHDGoyu3R">R4 战斗形态由"游戏内时间跨度 × 战斗频率"决定</h4>
+      <div class="who-line" data-page-node-id="hr2j9czGvVYxrLbsueJ7SZ">支持者：森（20 年判据）、唐史（下棋疲劳）、晋（会战仪式感 + 小/大会战分层）、杭（Axis &amp; Allies 式大战略图 + RTS 小地图）、秦（大图+加载场景即时战斗，推荐终极将军内战）、石（棋最好）、学生（会战偏好 CA 感）、赣（皆可，但要求公式透明）、北大（除"文明式弱智加力战斗"和"V3 无战斗"外皆可）</div>
+      <div class="claim" data-page-node-id="Jf9Uyt3BA473jiKjiUdR9L">结算频率 × 单次结算成本必须与时间跨度匹配——长期高频战斗必须低结算成本（撞兵/自动），短期低频可承担高成本（下棋/场景战斗）；"会战"提供仪式感价值。</div>
+      <ul class="tight" data-page-node-id="PKVqGVnFOcMhU5bpQvHqcu">
+        <li data-page-node-id="zO6rKYeMLSN4Z0XFpMLDCf">森：<em data-page-node-id="Z7WH0Fyh7hoZIfj0QXCndA">"如果游戏的时间跨度很长（20 年以上），而且战斗很频繁用撞兵战斗比较好。较短用下棋好一点。设计自动战斗的功能"</em></li>
+        <li data-page-node-id="IGBZTF51SLKN2yVUhEbcGE">唐史：<em data-page-node-id="WKpOYRoDETxxwho8Ky0YFO">"战斗场景下棋在后期可能会累死人"</em></li>
+        <li data-page-node-id="605FJqfH1c27sQjEff3RsU">晋：<em data-page-node-id="CInNFC3nYYIpPiAUTADLeQ">"我感觉有个会战系统比较有仪式感……可以试试区分小规模战斗和决定性会战"</em></li>
+        <li data-page-node-id="QMVrCexbYAA69Ic8Uj76kC">杭：<em data-page-node-id="pdBjFwPPA85uVfEVCJEX1o">"我心目中比较好玩的大战略类是 2004 年的《轴心国与同盟国》，大战略地图+RTS 小地图，比全战的纯带兵牌多了各种建筑建造"</em></li>
+        <li data-page-node-id="8DzPfls5msN2UyiVT5ytKt">秦：<em data-page-node-id="WaxPTQPa0e5GFwKzURRTGL">"有大地图和加载场景的即时战斗，推荐一个机制是终极将军内战"</em></li>
+        <li data-page-node-id="zO0nxQor45ej9LfI1DUiXs">学生：<em data-page-node-id="bosjG3n1Ny92ChgVBaKW0v">"会战更喜欢类似 CA 这类感觉"</em>；赣：<em data-page-node-id="EStvrOHTkMMErw6LiU9KLN">"皆可。但我希望能详细了解到作战计算机制。不管是欧陆还是文明经常掩去具体计算公式，让我不爽"</em></li>
+      </ul>
+      <div class="imply" data-page-node-id="tlmzNDwaLSUVfFud4f7FDR"><b data-page-node-id="K9ufrdkpoCKE0P1xG10EmR">设计含义：</b>⚠️ 核心未决。森的 20 年判据 + 自动战斗兜底是调和器；两条"大图+场景"路线参照：杭 → Axis &amp; Allies（大战略图 + RTS 小地图 + 建筑建造），秦 → 终极将军内战（大图 + 加载场景即时战斗）。</div>
+    </div>
+
+    <div class="rc" data-page-node-id="siHijrg1KEUVPLqQD5nLQJ">
+      <h4 data-page-node-id="WVqqcEvvRQx9nJaUjadFS8">R5 城 = 地（特殊格子），不是点</h4>
+      <div class="who-line" data-page-node-id="dq0xgPCeA2geOrXmezu4vN">支持者：森、唐史、杭、石、学生、晋（<b data-page-node-id="Fnqw6MGXBEuVDbmsDVrAzu">6/9 明确支持"一城占一块地"式表达</b>）；秦（投"三国志系列"式，即城市+辖地区块）；北大、赣（不本质）</div>
+      <div class="claim" data-page-node-id="Sd3wokPESep69FMKmNSrYL">点式城市切断地理连续感；格子式让城市参与地形与作战表达，且城市尺寸可随题材放大。</div>
+      <ul class="tight" data-page-node-id="ZghLuDAC0kFjqlcwQhxqBo">
+        <li data-page-node-id="rjssaMk7aa1KG0nG31zTfj">森：<em data-page-node-id="AV560WYmHqkXwWoEHWC6TZ">"一个城占一块地，城上面/周边的建筑影响作战时的地形"</em></li>
+        <li data-page-node-id="pphyAXPyBfK7H3Bbazsjhr">唐史：<em data-page-node-id="pNbXNEIE0xPYkUm2EscBlv">"占地下棋"</em>；杭：<em data-page-node-id="ne6bSBHjCMPfQZeExl6vga">"2026 年了还是分点区块吧"</em>；石：<em data-page-node-id="ARm8kJQh7N975qAAs4I5CE">"简单区分城地即可"</em></li>
+        <li data-page-node-id="hMykkyMcwTJWm06wlNM8fM">学生：<em data-page-node-id="wRVVtoYarpFl3xMRDSAgFc">"更喜欢将城市理解成特殊的格子而不是一个点"</em></li>
+        <li data-page-node-id="X6ebOPKobsR0B1UzXKUFYv">晋：<em data-page-node-id="MzLnOcvjcMpsIWTxA0H4HQ">"其实可以考虑把城市设计成更大一圈的六边形，尤其是涉及复杂地形"</em></li>
+        <li data-page-node-id="NmzmZuEUwUFHIwEVlzDlPQ">秦：<em data-page-node-id="ubZGk6Hdw22cD3BQp9dHSI">"三国志系列吧"</em>（即问题 5 的 B 选项：城市+辖地区块体系，区别于"一城一格"）</li>
+      </ul>
+      <div class="imply" data-page-node-id="zoFDmkUD1Bi5YocFTfBcqU"><b data-page-node-id="EJbO5UPikpMWWyThKFMGvx">设计含义：</b>✅ 确定——城=特殊格子（可为多格/大六边形），建筑影响周边地形。</div>
+    </div>
+
+    <div class="rc" data-page-node-id="2NNss5AnfT92WXsR7gWmxg">
+      <h4 data-page-node-id="wsJbkPA1i4mr2iNDEVLBed">R6 回合节奏是"操作框架"的下游，随时代分代</h4>
+      <div class="who-line" data-page-node-id="2k61mLSfxwaDF7ylwMZOSR">支持者：森（自己走时间）、唐史（自动执行 1–3 月）、杭（一顿计算下月）、石（跟操作框架走）、秦（时代分代数值）、赣（回合越大越桌游）、学生（三国志 9/14 式 + 会战机制）、晋（取决于游戏时长和时段）、北大（取决于前面，不本质）</div>
+      <div class="claim" data-page-node-id="KTA6oB1WvSJI7OqkAuXpwz">回合粒度不是独立参数，而是"玩家每回合要做什么"（操作框架）的下游；时代决定可想象的时间粒度；支持自动执行以减少点按疲劳。</div>
+      <ul class="tight" data-page-node-id="GEa7h9rWmj0lb2SnUEuzI2">
+        <li data-page-node-id="YVQuDKij7qZppQqoBUmFp8">秦：<em data-page-node-id="odOQnYIrjID7cNyHdJbbgj">"火枪时期往前应该在 3 个月，往后应该在 1 个月甚至更短（战略级）；至于战术级别，那不应该超过一周"</em></li>
+        <li data-page-node-id="A9TVHx3PQG2eGShWQwlaI5">赣：<em data-page-node-id="1R3bM7CAua6wYeJFIxAhPt">"回合越大越桌游，回合越小越即时"</em>；石：<em data-page-node-id="N8eJ6WPBIDMMmnro4N9cIe">"时间尺度跟着操作框架走"</em>；杭：<em data-page-node-id="5ZEyoHVSWlhZ0ssmjPocDT">"一顿计算直接到下一个月就可以了"</em></li>
+        <li data-page-node-id="Oqtyc0ZZGSPRLmUvAWXiY7">森：<em data-page-node-id="CRFOvCd2vO0r4rxM4OlGan">"自己走时间"</em>；晋：<em data-page-node-id="5qqLYtWGDgHpvPlkBBnZuA">"回合得考虑游戏时长吧和时段吧"</em>；北大：<em data-page-node-id="a7ZfIabygYrDYzBRUPhJxO">"显然取决于前面几个问题的答案 但是也不本质"</em></li>
+      </ul>
+      <div class="imply" data-page-node-id="3i3uzptDBxBZ86ZZFZ5PsF"><b data-page-node-id="Ok0G1SpLvaeDSyzrejxhH5">设计含义：</b>✅ 方向确定（时代分代 + 自动执行）；数值用秦的提案作基准——<b data-page-node-id="dbBVZsM3zgpFpWx9iEDjIN">古战 3 个月 / 火枪后 ≤1 个月 / 战术级 ≤1 周</b>（待原型验证）。</div>
+    </div>
+
+    <div class="rc" data-page-node-id="PFjdH0rlenTP3Kn56LSsTg">
+      <h4 data-page-node-id="gvBLakAOWdrd06kdmVhWVx">R7 竞品空白 = 生态与自由度问题，不是品类饱和</h4>
+      <div class="who-line" data-page-node-id="F5nj67StMgFFoGGUugyaU6">支持者：杭（MOD 生态）、晋（全战懒+精力错配）、秦（自由度）、唐史（市场容量）、赣（沉浸不足论）、北大与石（不认可前提）、森（桌游实体操作量 / 手机氪金 / 简化 vs 伪复杂）</div>
+      <div class="claim" data-page-node-id="XeZGFwNsrCsrSKjhOEWkeM">P 社的护城河是 MOD 生态 + 地块自由度，而非"历史模拟"本身；全战/文明各自短板（内政外交简陋、时空观出戏）给了 P 社空间；部分受访者不认可"P 社不可替代"的前提。</div>
+      <ul class="tight" data-page-node-id="UWXAjm11G1tOIMIY5jcHSd">
+        <li data-page-node-id="B8PhzoQCtiF5ka8mCFxZiJ">杭：<em data-page-node-id="WrGMM4XpBAaY7DJUAFgVyA">"P 社游戏优点就是 MOD 多，P 社做不到的玩家替它做，这个懒逼公司"</em></li>
+        <li data-page-node-id="iaxGPdfiInOF9dnfT3dl3L">晋：<em data-page-node-id="QYL0h4ABNtkTjBKi4aahmQ">"全战替不了是因为懒狗，加上一大段精力分在战斗这个具体表现上了，P 社的实际战斗和平衡一般不太存在——某种角度来说，可能胡逼一点有利于宣传"</em></li>
+        <li data-page-node-id="MdJSFlveZrcGiadmM6Gz8I">秦：<em data-page-node-id="ZaF248iX2Ysvo4Sqny2GSQ">"因为很简单，地块多少决定自由度。自由度决定玩家发挥程度，和游戏上限程度"</em></li>
+        <li data-page-node-id="67TfaU15x3QEdiyCeqhfzL">森（竞品盘点）：桌游 EU4 <em data-page-node-id="Fkipc9Mv1b5mS5gG8yDVjb">"即使计算对于玩家来说很简单，实体操作量也太大"</em>；手机欧陆战争 <em data-page-node-id="sz3Aey6mRc2RADzufh2VtS">"战斗比较粗糙，运营比较氪金化"</em>；文明时代系列 <em data-page-node-id="npcgxgGeDtrLKfImQ5BUrs">"作为战略游戏战斗和加减法几乎没区别，过于简单"</em>；超级力量 <em data-page-node-id="lKoXag9QfGK6SXHv2HFpqd">"看上去做了很多，其实有用的东西不多，优点像 eu5 的毛病"</em>；文明时空观 <em data-page-node-id="S2IVtI2xLbpxf6e45MX2hP">"不管小地图还是超大地图，步兵骑兵走一次都是两格/四格"</em>、<em data-page-node-id="XblS3YoGtDF5bhFtvwU338">"越古越强，很多文明几乎是没什么特殊性的白板"</em>；全战 <em data-page-node-id="EaMWQpP8COaGXbE8VTDsZ5">"战斗足够出色，经济、内政、外交等方面虽然有但是相当简陋"</em>（附庸莫名宣战）</li>
+      </ul>
+      <div class="imply" data-page-node-id="OmoQrrCH2yTE1yc9ZBA4L0"><b data-page-node-id="JcxGRKUUvdCueedGFDwJve">设计含义：</b>把"自由度 = 地块数 × 可操作深度"当硬指标；预留 MOD 生态位；避坑清单 = 避免"看着多做用少"（超级力量/EU5 病）、避免时空观出戏（文明式）、避免内政外交太简陋（全战式）。</div>
+    </div>
+
+    <div class="rc" data-page-node-id="BYwgWRshHNArfSylkD14ya">
+      <h4 data-page-node-id="U4luB8HnCQu4fYq7Q78c0m">R8 吸引力本质 = 控制力 + 沉浸 + 系统可信，三者在场</h4>
+      <div class="who-line" data-page-node-id="UNs39wOiPDC8P4MFzDUjwT">支持者：晋（控制力）、秦（自由度）、森（掌控感+系统+性价比）、学生（模拟错觉）、唐史（蝴蝶效应）、赣（历史感）、石与北大（多人互动）</div>
+      <div class="claim" data-page-node-id="mBALD84Prt0x9XOhVGfXST">表层吸引力是涂色与历史皮肤；深层是"在一个可信系统里施加影响并看到结果"——控制力/自由度、系统可信（AI 平衡）、历史沉浸三者共振；桌游圈额外看重"预设规则下的多人互动"。</div>
+      <ul class="tight" data-page-node-id="siPZbDGFnFJ8nKF85VVebc">
+        <li data-page-node-id="CzTqZJKuJLzCWYdfOHK7Rx">晋：<em data-page-node-id="lfGis4AEHIWkvK6EEjwHTK">"最大吸引力，其实是控制力"</em></li>
+        <li data-page-node-id="v3KDgShe1OxCeZ2S7I5Y4V">秦：<em data-page-node-id="1VdWnOtUnkW5Uh610GsQqo">"并不是（历史真实性）……简单来说就是自由度。更大更复杂的地图。更好的地块自由发展"</em></li>
+        <li data-page-node-id="PchLOvTmXaKvM7B3xaKCrH">森：<em data-page-node-id="X5hivbWxRCVBubE0CVdVTC">"有一套在游戏设定世界观内相对稳定、普遍、可运行的系统。在此基础上，玩家通过选择不同势力/角色可以体验的风味故事内容比较丰富，且有历史沉浸感、差异感，甚至能产生玩梗的快乐。掌握游戏系统后，玩家有一定的掌控感和获得感。游戏周期较长，游戏实际性价比较高。在一个相对复杂的游戏环境下，游戏 AI 表现虽然有槽点，但比同类游戏相对较好"</em></li>
+        <li data-page-node-id="sJDW4MJHGI9TTN6qmyRQl5">唐史：<em data-page-node-id="OAQP5scfD5niWil1Z4Olm6">"人和 AI 相对平衡，可以在游戏内看到玩家对局面扰动的蝴蝶效应"</em></li>
+        <li data-page-node-id="deeCT3PS2LCUAtC9iorUMA">石/北大：<em data-page-node-id="nx8CwJMBLh3vORnCOeOGBF">"预设历史背景和规则下的多人互动"</em></li>
+      </ul>
+      <div class="imply" data-page-node-id="gngE3AHIqbl3HmvQp9v22W"><b data-page-node-id="U9YH2QSglknmlH1dI7bwqq">设计含义：</b>✅ 三大支柱直接进 GDD——<b data-page-node-id="519F2w8myX6RuZyerOeoEg">稳定可运行的系统 / 风味与沉浸（含玩梗价值）/ 控制力与自由度</b>；AI 平衡（唐史）与性价比（森）作为隐性支柱。</div>
+    </div>
+  </section>
+
+  <!-- 三、决策矩阵 -->
+  <section class="block" id="s3" data-page-node-id="5qeoDMjFHA9vCnjy0BOWFp">
+    <h2 class="sec" data-page-node-id="exVDT9DBlbXpLSxBIA8TOK"><span class="no" data-page-node-id="Hz9y1yZe5ThoYaF93QNgLJ">三</span>决策矩阵（核心交付 3）</h2>
+    <p class="sec-desc" data-page-node-id="QrsQlwFkcHBQvwaSNUAFRt">读法：一题一行。票型列 = 谁投了什么（代号见文首）；建议列 = 综合森的表态 + 多数票 + 分析判断，供下一步讨论。</p>
+    <div class="stats" data-page-node-id="voWM1fle21ez5nA009kHJM">
+      <div class="stat ok" data-page-node-id="nHdjNpeKEYv4VC1431EptI"><div class="n" data-page-node-id="zxxAfDhDZoEg9DJf4CETFr">5</div><div class="l" data-page-node-id="FY4bC9FGzt4JB1igkxXs9X">已确定 · 方向落定</div></div>
+      <div class="stat warn" data-page-node-id="AQMjA0ruZxWe4cQeDaObwC"><div class="n" data-page-node-id="HlxrD5xLzxfR7EuWVI8HdZ">2</div><div class="l" data-page-node-id="dC3NZwiO7hffIBYLrCJiFR">待验证 · 题材 / 战斗</div></div>
+      <div class="stat ref" data-page-node-id="Kn15ZG9VeGH63sDhYnqg6b"><div class="n" data-page-node-id="HSMXuc819gF9e50CeQ5OnM">1</div><div class="l" data-page-node-id="JcZGRPcTUdTsCc3IEK1bU9">避坑清单 · 竞品定位</div></div>
+    </div>
+    <div class="tbl-scroll" data-page-node-id="HXR0VCOWWcHdTmQg4kqofd"><table data-page-node-id="jsdcYSkPYUGMCuWsb7xsDC">
+      <tr data-page-node-id="5AaUEllI112AtCEmr3Nw3I"><th data-page-node-id="It28zZQYuRQjEldU8UCiu2">#</th><th data-page-node-id="luKc7uIY4GsUILMN7o8JI5">决策项</th><th data-page-node-id="5ShgSkRMN62yItdA9jMGob">票型分布</th><th data-page-node-id="bTbqnPJfo4lJAIgFFrYjri">关键论据</th><th data-page-node-id="DPpbfl4qmWRFCZFfQ3dd07">状态</th><th data-page-node-id="0os1jpIy04h1pwyq7aYGeL">建议</th></tr>
+      <tr data-page-node-id="TpCcNCyafsYWsjfo8tRyg7">
+        <td data-page-node-id="Asn5EAEdwYXiXZirmhhVor"><b data-page-node-id="iB0ZAcVywF0Kqni3L9GWlt">D1</b></td><td data-page-node-id="IjVfLjrBDGEJZhthH5pAYV">题材：国别 / 冷热</td>
+        <td data-page-node-id="t2JC2GYUVcCbqjgpmMo2Og">国外：唐史、赣；国内：石；冷兵器优先（国别未明）：晋；视情况/均可：森、学生、杭、北大、秦</td>
+        <td data-page-node-id="DjF3PVfC773jEBqSTIUpFh">森：深度玩家更吃国内+梗文化，市场证据——轻量玩家喜欢全战三国、重度玩家喜欢 CK3"普天之下"DLC；唐史/晋：国内考证出戏 / 热兵器国内题材"有点微妙危险"</td>
+        <td data-page-node-id="fMwTg0FG7rF0iGagxUccfe"><span class="st st-warn" data-page-node-id="5SWwCV4MAWcznzHxnqkDB3">⚠️ 需市场验证</span></td>
+        <td data-page-node-id="Y69eNvZMHLqC9OC9839mQr"><b data-page-node-id="JuFaShiLbwUiFI8IMVfMFM">国内题材 + 梗文化位</b>为主探索方向（森的产品判断优先），考据外包给专业审核以治"出戏"；冷兵器优先（晋的"危险"提示 + 石要热兵器的 1/9）</td>
+      </tr>
+      <tr data-page-node-id="HzFe0SCYQTWsVbylmjd1r6">
+        <td data-page-node-id="EeC8F7J8RETcLAhK6DD8Bl"><b data-page-node-id="hAEVswshrCHDNKcgGDnVYw">D2</b></td><td data-page-node-id="XExYFgAzqjlZsSnEJt5sSO">将领系统</td>
+        <td data-page-node-id="oLFYIA5b4BuUHWAQ9q50zr">支持特化 7：森、唐史、杭、学生、北大、晋、秦；反对 2：石、赣</td>
+        <td data-page-node-id="3KIB8HwkkJDR5NPQ6UeySc">森：拿破仑战争分界，以前将领有用往后没用；杭：特色可以但别全战三国式过头</td>
+        <td data-page-node-id="Lrr5mcVvpocjDuMKETMyWe"><span class="st st-ok" data-page-node-id="Uq5BSmopaBVJq6MvskPrcX">✅ 方向确定</span></td>
+        <td data-page-node-id="srUKnxECDzY3veCS0x8OBt"><b data-page-node-id="wrNOpeDrWUiJXhVPfMeGY4">将领特殊化，时代调节权重 + 稀缺化</b>（唐史"更珍惜"）；RPG 上限参照杭的判据；推演模式可提供"将领淡化"开关（学生）</td>
+      </tr>
+      <tr data-page-node-id="uEc4FoFhdxmdhlltkI785h">
+        <td data-page-node-id="azk2Myt9ZKVI5MzJUbRs7Y"><b data-page-node-id="eDUrYMZ0t2VfGzafazPglk">D3</b></td><td data-page-node-id="OzH9g03RQU2wMYCtzfc0uW">地图系统</td>
+        <td data-page-node-id="SMl9t918G4Z2IqWiwhHnZs">六角格/方格系：森（六角）、唐史（方格）、学生（格子+会战）、秦（容量论）、晋（菱形或隐藏菱形）；无格：赣（历史模拟）；分级：石；不本质/未答：北大、杭</td>
+        <td data-page-node-id="zvcWC5yaUZQhxnUoB3XLSe">森：六角距离均等最拟合现实（出处"看过一个文章"）；唐史：划分成本高；秦：格子=通行容量，可点对点划线；晋：大地图/战斗地图可分层</td>
+        <td data-page-node-id="XVAsrTZ9SZHewzKJuCJAjP"><span class="st st-ok" data-page-node-id="FtOfmGkdgNg1HS1DcSZgtW">✅ 倾向确定</span></td>
+        <td data-page-node-id="kMZOo6CIkEidV2ZT2xIuep"><b data-page-node-id="MisP2cyeCCy5Tzrm64yZ4a">六角格为主</b>（主舞台）；战斗层预留无格/欧根式空间（晋 Q3）；点对点自由划线作远期扩展（秦）</td>
+      </tr>
+      <tr data-page-node-id="ea7X4d8H2YJG6SQVh9cBTT">
+        <td data-page-node-id="GGugsspC34a7n4eeWwP39x"><b data-page-node-id="0UJLK6m54PcTo5VVpZlMwf">D4</b></td><td data-page-node-id="Iu9N8RQQrWeYgNNFcQ3sWX">战斗形态</td>
+        <td data-page-node-id="rPN89MAveNYIIiJ5KtLVib">撞兵/低结算成本：森、唐史、石；大图+场景/小地图：杭（Axis &amp; Allies 式 RTS 小图）、秦（终极将军内战式）、晋（会战仪式感+大小会战分层）、学生（会战 CA 感）；皆可/不限定：赣（要求公式透明）、北大（除文明式加力战斗、V3 无战斗外皆可）；三国志 9 式大地图即时混战：无人直接选（选项保留）</td>
+        <td data-page-node-id="GYvkjIOYsmfGt4LpCQXoqN">森：20 年+高频→撞兵，短→下棋，做自动战斗；秦：推荐终极将军内战机制；杭：Axis &amp; Allies 大战略图+RTS 小图+建筑建造</td>
+        <td data-page-node-id="V3rC3BDlRLXrLrEfnpAGR3"><span class="st st-warn" data-page-node-id="gTNYsIwoaI9wGqUzGXQ4go">⚠️ 核心未决</span></td>
+        <td data-page-node-id="ALlsoiSGYuC9bBNiNpasUB"><b data-page-node-id="XNyhMdoeeaGo537lf6UeEF">双轨</b>：撞兵/自动结算作默认底座（长期高频），标志性会战进"加载场景"（明确玩法设计，参照终极将军内战 / Axis &amp; Allies），默认自动战斗兜底；数值门槛用森的 20 年判据</td>
+      </tr>
+      <tr data-page-node-id="RxHYb9Dg1rbl4vedD1egx7">
+        <td data-page-node-id="Gudxc1VvA2PLzJS33eZD1T"><b data-page-node-id="larrU13Zuni64sDD8ZAZxM">D5</b></td><td data-page-node-id="RqtoRSj4rAiCUgaRJOg9DF">城地表达</td>
+        <td data-page-node-id="wGSa6HOkuDqMvA3Q8Pvu4o">一城占一块地（A）：森、唐史、杭、石、学生、晋（6/9）；三国志式城+辖地区块（B）：秦；不本质：北大、赣</td>
+        <td data-page-node-id="TxaGqE2bH88vbV4nFXSIfP">森：一城占一块地，建筑影响作战地形；学生：城市=特殊格子；晋：可做大一圈六边形；秦：投"三国志系列"式</td>
+        <td data-page-node-id="WC2BEPlyvNHSER6I6EAOSr"><span class="st st-ok" data-page-node-id="woO5A3iogWJb9LeB8F8fMA">✅ 确定</span></td>
+        <td data-page-node-id="sdkK8pDXeBtErTsWgO102b"><b data-page-node-id="ReiTCemDi3ApCwH1hxFSam">城 = 特殊格子（可为 2–7 格的大六边形）</b>，城及周边建筑进入作战地形计算；保留秦的"三国志式（城+辖地区块）"作为中尺度备选；现代题材可放大城市体量（晋）</td>
+      </tr>
+      <tr data-page-node-id="fHsacTDSbUDFaCbDXVhjwW">
+        <td data-page-node-id="TaR7LqdY71Wb0q6hUTWilK"><b data-page-node-id="O8sIr53nd2xTn7fKkymdGu">D6</b></td><td data-page-node-id="Rs8AZoSyRgqFqSf2mAa7RJ">回合节奏</td>
+        <td data-page-node-id="ZOtrvblbt9FHYI4aeiacTd">自动执行：森、唐史、杭；时代分代：秦、晋、石、学生、赣；取决于前面/不本质：北大</td>
+        <td data-page-node-id="4mAM8x0hT0h7lKr0rIeEob">秦：火枪前 3 个月 / 火枪后 ≤1 个月 / 战术 ≤1 周；赣：回合越大越桌游越小越即时；石：时间尺度跟操作框架走</td>
+        <td data-page-node-id="DKsQHLdBb7jX0uoPyVSkm9"><span class="st st-ok" data-page-node-id="iYYCcrW2CB5ZZQSGtWNGTj">✅ 方向确定</span></td>
+        <td data-page-node-id="lAP466XmlNQf3TIB07iFN6"><b data-page-node-id="DOpFjS8OG3S6jgMFCT9AEM">分代节奏 + 自动执行</b>：基准值采用秦的提案，用原型沙盘微调；战术层单独时钟（≤1 周）</td>
+      </tr>
+      <tr data-page-node-id="D5IAhHaIVIqIoDdb8OfYd4">
+        <td data-page-node-id="YoEapMWPGqZBVgeHn3shbS"><b data-page-node-id="oEFbJvH3iRMkQEaDIZWpI1">D7</b></td><td data-page-node-id="QyU7i1cvMDpRyvKBNmAogG">竞品定位</td>
+        <td data-page-node-id="zxf9YzMJjVIeQoGTPWFxvb">生态论：杭、晋；自由度论：秦；市场容量：唐史；不认可前提：石、北大</td>
+        <td data-page-node-id="m28AD0KrRpw8gFTtAwSvJW">杭：P 社靠 MOD 生态（懒逼公司）；秦：地块数=自由度；森：EU4 桌游实体操作量劝退</td>
+        <td data-page-node-id="GMerOfk4D4D1QCDigyybqp"><span class="st st-ok" data-page-node-id="lFG0dBmB7LU83HS2pr37T8">✅ 避坑清单</span></td>
+        <td data-page-node-id="lL1xiLkg1rjIBFCeG2qbeA"><b data-page-node-id="AVedGaiBveYThn35xZceKZ">自由度=地块数×可操作深度</b>作硬指标；预留 MOD 生态位；避坑：伪复杂（超级力量/EU5）、时空出戏（文明）、内政外交简陋（全战）</td>
+      </tr>
+      <tr data-page-node-id="2PkFUmmxAvYFyYn3cU0eYN">
+        <td data-page-node-id="ZbT7e2p2Q3vfNYWee5ZHhp"><b data-page-node-id="lcdtYJVi9prGaPEwLcC3zF">D8</b></td><td data-page-node-id="Izri7Du5jR96Jih7QXpPk5">吸引力支柱</td>
+        <td data-page-node-id="aNqTSIaUrcODLpwLKG0DGD">控制力：晋、秦；沉浸：赣、唐史(蝴蝶效应)；系统可信：森、学生；多人互动：石、北大</td>
+        <td data-page-node-id="r3Cy4eBQI8dpmbDlyE93ae">森：稳定系统+风味+掌控感+性价比；晋：控制力；秦：自由度</td>
+        <td data-page-node-id="c0aM4ZHt5ClAyoLcNQ2r1m"><span class="st st-ok" data-page-node-id="gvY3ogR9D03OsVduGHHZkO">✅ 确定</span></td>
+        <td data-page-node-id="mEBEcHtDpefJ5vHBxZkVLF"><b data-page-node-id="tIHpVPJSLo5faThFiyAIM7">三大支柱入 GDD</b>：稳定可运行系统 / 风味沉浸（含玩梗）/ 控制力自由度；AI 平衡 + 性价比为隐性支柱</td>
+      </tr>
+    </table></div>
+    <h4 class="mini" data-page-node-id="M0AugcilY3g4JuNcfUprKh">矩阵结论（一屏速读）</h4>
+    <ul class="tight" data-page-node-id="kZCTPaMeXTXGOPKuP92Ipl">
+      <li data-page-node-id="OjBf4nMZD5vKqgNhCDYgNz"><span class="st st-ok" data-page-node-id="hOaSK7SDYERODHgVpyrq2d">✅ 已确定 5 项</span>：将领特化（D2）· 六角格（D3）· 城=特殊格子（D5）· 分代回合+自动执行（D6）· 三大吸引力支柱（D8）</li>
+      <li data-page-node-id="MiJN77xAlr6wKVjzAeDtRx"><span class="st st-warn" data-page-node-id="INnk06c9seWLjqfVi6xyZw">⚠️ 待验证 2 项</span>：题材国别（D1）· 战斗双轨（D4）</li>
+      <li data-page-node-id="r6hwntvWPjlQckp08CDYEC"><span class="st st-ref" data-page-node-id="yLpSAoU3zeod1FX1cWwFpW">📎 避坑清单 1 项</span>（D7）：伪复杂 / 时空出戏 / 内政外交简陋 / 无 MOD 生态位</li>
+    </ul>
+  </section>
+
+  <!-- 四、开放问题 -->
+  <section class="block" id="s4" data-page-node-id="gxKj1IF2lNL1UysLuSqqT5">
+    <h2 class="sec" data-page-node-id="7nStpjAD1KeXeMPp4AFjFE"><span class="no" data-page-node-id="NDc5IBt8RyFdGEMXTshjou">四</span>开放问题（下次会议/原型验证用）</h2>
+    <ol class="tight" data-page-node-id="ZDFSIMlagyTqKusDOTCADi">
+      <li data-page-node-id="HLT2L6RsKusSIdJenCCoSc"><b data-page-node-id="UxpbGaQVqiwzToT0l0VOKu">题材市场验证</b>：国内+梗 vs 国外考据——需要更多二手市场数据（销量、MOD 下载量、社区二创热度）</li>
+      <li data-page-node-id="GWVRa9qGzo8lDaT80Chb8k"><b data-page-node-id="jb3a8mdnc6x91DcXdxytt4">主舞台尺度</b>：宏观独走，还是三尺度贯通（宏观调度 → 中观行军 → 微观会战）？建议先用"贯通"出原型再砍</li>
+      <li data-page-node-id="wqmqejKtBCZ7ThbGMg27j2"><b data-page-node-id="bz6rw5xufr5IF6GWAX8ef0">战斗双轨工程量</b>：撞兵底座（低）+ 标志性会战场景（高）——评估工作量与 MVP 取舍</li>
+      <li data-page-node-id="HnwwO2tvEiMgHcOVISjWAC"><b data-page-node-id="pbVXDb4pJT6in3kwLxmGzA">兑换比例数值</b>：资源三分法的兑换曲线需进沙盘验证（复用 <code data-page-node-id="cd4dH7h9sAXDmVCtzCPDRI">03_prototypes_and_tools/index.html</code>）</li>
+      <li data-page-node-id="Bf5j0XXjGAFKLHM0zSFfKb"><b data-page-node-id="lk5DjvYOey01MXH9GPWCRw">MOD 生态位</b>：数据结构开放性与 modding 文档计划，从一开始就留接口</li>
+    </ol>
+  </section>
+
+  <!-- 附录 -->
+  <section class="block" id="appendix" data-page-node-id="JbcnC2FCTnC98x4bbso2Ej">
+    <h2 class="sec" data-page-node-id="ZkQh86m8uvKOzBHISnnySO"><span class="no" data-page-node-id="zfVjRHOBlfEG8JaB3Lcc6B">附</span>上游 8 个通用问题原文（逐字保留）</h2>
+    <ol class="tight" data-page-node-id="UTKoPuuu5TUF8u3ss921Yu">
+      <li data-page-node-id="04rjhod1UvxqtWRbsCdmNn">这类玩家最喜欢的是国内还是国外？冷兵器还是热兵器，还是说都没区别？</li>
+      <li data-page-node-id="x56wngGQlWf6vS82PnMqvA">会希望将领特殊点吗，文明和欧陆风云其实存在感较为一般，不像全战三国。</li>
+      <li data-page-node-id="ZAbD0Bp3NQCgmjvbFkd1Lt">地图设计更多的是文明这种菱形方格，还是说隐藏菱形方格，或者是没有方格（三国志9，地区划分）？哪个更好？</li>
+      <li data-page-node-id="IEyVagXxt93mngjvjhsBco">战斗更期待哪种？文明和欧陆那种？三国志9大地图即时混战（在过回合期间）？还是说有大地图和加载一个战斗场景的区别，但是战斗场景比较简单的即时战斗（需要单独设计明确玩法），又或者战斗场景也还是下棋，但是更细致。</li>
+      <li data-page-node-id="hkriwofB9xE82JM5BGbq9f">有关城和地的设计，一个城占一块地的下棋？还是三国志系列。</li>
+      <li data-page-node-id="6q9qDHivLVbzui1FjtBGDs">每个回合结束是自动执行1-3个月吗？类似三国志9，还是一顿计算直接到下一个月就可以了。</li>
+      <li data-page-node-id="50KtKLATo2YebMu4NLIYFR">为什么出了p社游戏外，没有好玩的战争/政治/涂色的桌面/手机游戏？文明，全战为何无法替代欧陆风云？</li>
+      <li data-page-node-id="eOzRDZeedRq3l1i7cJkDlu">欧陆风云，维多利亚这类游戏最大的吸引点是什么？除了涂色外，历史真实性？真实货币设计？真实的事件处罚？还有什么特别明显的优点？</li>
+    </ol>
+  </section>
+
+  <!-- 相关文档 -->
+  <section class="block" id="related" data-page-node-id="aOJn21vzwfc6ZHJVvqC1LN">
+    <h2 class="sec" data-page-node-id="DlL9NgtN2MC3cJNWke0KsB"><span class="no" data-page-node-id="HLetXKw5kK3CtCEsTFI4dm">↗</span>相关文档</h2>
+    <ul class="docs-links" data-page-node-id="SdQEnZP8ZbNjxNoGAtQ9Ru">
+      <li data-page-node-id="JFT0ztTjQ2dhLM47YkfJrP"><a href="../original_designs/01_game_design_documents/GDD_TEMPLATE.md" data-page-node-id="xgXAnnJgEsCCsjDGtE4wN1">策略游戏标准策划案模板</a> —— 本分析是 GDD 一、三、四、五章的输入</li>
+      <li data-page-node-id="ZUcCgqooFDWgJjpNoKdItG"><a href="../original_designs/02_mechanics_architecture/modular_systems_guide.md" data-page-node-id="B7Rj2yM9UhmnqGNnH6yMDQ">模块化机制设计指南</a> —— 框架各系统的实现层</li>
+      <li data-page-node-id="lCFOCI3e8Lv4PtbULOZeV4"><a href="../original_designs/04_historical_archetypes/archetypes_catalog.md" data-page-node-id="efIG6fz1Dk2KzB242RJZPH">历史制度原型典籍</a> —— D1 题材与 R1 考据的历史素材库</li>
+      <li data-page-node-id="OUtcUaFoTEomGtdPsDRk3g"><a href="../original_designs/03_prototypes_and_tools/index.html" data-page-node-id="NqctrrlygQJRIMPHJmkZA7">自研机制原型工作台</a> —— 开放问题 4 的验证工具</li>
+      <li data-page-node-id="TyoTgLiST7HCCcijPSmpu3"><a href="DOCUMENTATION_STANDARD.md" data-page-node-id="CLNc6dlSitBTZBvkD16GAZ">文档整理规范</a></li>
+    </ul>
+  </section>
+
+  <footer data-page-node-id="WFSZFDUSyulamAu6isrlnh">《Project Chronos》玩法框架与玩家调研分析 · v1.0.1 · 2026-08-29 · 源文档：docs/chronos_research_analysis.md</footer>
+</div>
+</div>
+
+<script>
+(function(){
+  var toc = document.querySelector('nav.toc');
+  if(!toc) return;
+  var bar = toc.querySelector('.toc-bar');
+  var links = toc.querySelectorAll('a[href^="#"]');
+  if(bar){
+    bar.addEventListener('click', function(){ toc.classList.toggle('open'); });
+  }
+  links.forEach(function(l){
+    l.addEventListener('click', function(){
+      if(window.innerWidth < 1180) toc.classList.remove('open');
+    });
+  });
+  var secs = [];
+  links.forEach(function(l){
+    var el = document.getElementById(l.getAttribute('href').slice(1));
+    if(el) secs.push({id: el.id, el: el});
+  });
+  var onScroll = function(){
+    var th = window.innerWidth >= 1180 ? 24 : 110;
+    var cur = null;
+    secs.forEach(function(s){
+      if(s.el.getBoundingClientRect().top <= th) cur = s.id;
+    });
+    links.forEach(function(l){
+      l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+    });
+  };
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

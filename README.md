@@ -49,16 +49,26 @@ StrategyGameDesign/
 ├── original_designs/                        # 💡 自研策略游戏方案、GDD 与系统架构设计工坊
 │   ├── README.md                            # 自研设计工作流与设计标准规范
 │   ├── 01_game_design_documents/            # 📄 核心策划案 (GDD)
-│   │   └── GDD_TEMPLATE.md                  # 策略游戏标准化完整策划案模板
+│   │   ├── GDD_TEMPLATE.md                  # 策略游戏标准化完整策划案模板
+│   │   └── chronos_gdd_v1.md                # 《Project Chronos》第一期策划案 v0.1（调研决策落地）
 │   ├── 02_mechanics_architecture/           # ⚙️ 核心机制与系统架构深度拆解
 │   │   └── modular_systems_guide.md         # 模块化机制设计指南 (时钟/经济/战斗/AI)
 │   ├── 03_prototypes_and_tools/             # 🧪 交互原型与数值平衡演练沙盘
 │   │   └── index.html                       # 自研机制在线原型与数值平衡工作台
 │   └── 04_historical_archetypes/            # 🏛️ 历史制度原型与机制映射灵感库
 │       └── archetypes_catalog.md            # 经典历史制度转数值机制分类典籍
+│   └── 05_technical_art/                    # 🎨 技术美术工坊：美术与开发的桥梁层
+│       ├── README.md                        # 工坊导航与核心架构说明
+│       ├── civ5_style_art_tech_design.md    # 文明5风格技术美术设计圣经 (Godot 4)
+│       ├── shaders/                         # Godot 4 核心shader (地形/水体/选圈/迷雾淡出)
+│       ├── tools/                           # M1 工具骨架 (数据纹理类+合并地形Mesh构建器)
+│       └── reference/                       # AI 风格参考图 v3 定稿 + v2/v1 留档
 │
 └── docs/                                    # 📚 策略游戏设计方法论与理论沉淀
-    └── strategy_game_methodology.md         # 策略游戏核心心流、信息论与博弈论哲学
+    ├── DOCUMENTATION_STANDARD.md            # 文档整理与写作规范（front-matter/命名/交叉引用）
+    ├── strategy_game_methodology.md         # 策略游戏核心心流、信息论与博弈论哲学
+    ├── chronos_research_analysis.md         # 《Project Chronos》玩法框架与玩家调研分析
+    └── chronos_research_analysis.html       # 调研分析 HTML 浏览版（自包含单页）
 ```
 
 ---

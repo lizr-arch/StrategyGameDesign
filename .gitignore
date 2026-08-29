@@ -4,3 +4,6 @@ __pycache__/
 *.tmp
 *.log
 .DS_Store
+
+# WorkBuddy internal memory (not part of the deliverable)
+.workbuddy/
